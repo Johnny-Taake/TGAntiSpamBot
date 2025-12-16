@@ -1,5 +1,5 @@
 from sqlalchemy import BigInteger, ForeignKey, UniqueConstraint, String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
 
@@ -14,6 +14,8 @@ class ChatAdmin(Base):
 
     first_name: Mapped[str] = mapped_column(String(255))
     username: Mapped[str | None] = mapped_column(String(255), nullable=True)
+
+    chat = relationship("Chat", back_populates="admins")
 
     __table_args__ = (
         UniqueConstraint("chat_id", "telegram_user_id", name="uq_chat_admin_chat_user"),

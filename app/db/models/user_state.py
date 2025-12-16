@@ -1,5 +1,5 @@
 from sqlalchemy import BigInteger, ForeignKey, Integer, DateTime, UniqueConstraint
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import datetime, timezone
 
 from app.db.base import Base
@@ -17,6 +17,8 @@ class UserState(Base):
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
     )
     valid_messages: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+
+    chat = relationship("Chat", back_populates="user_states")
 
     __table_args__ = (
         UniqueConstraint("chat_id", "telegram_user_id", name="uq_user_state_chat_user"),
