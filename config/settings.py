@@ -20,6 +20,11 @@ class Settings(BaseSettings):
     db_echo: Optional[bool] = None
     db_timeout: Optional[int] = None
 
+    run_port: Optional[int] = None
+    bot_token: Optional[str] = None
+    bot_mode: Optional[Literal["polling", "webhook"]] = "polling"
+    webhook_url: Optional[str] = None
+
     def get_config(self) -> Config:
         config = Config()
 
@@ -34,6 +39,22 @@ class Settings(BaseSettings):
             config.database.echo = self.db_echo
         if self.db_timeout is not None:
             config.database.timeout = self.db_timeout
+
+        if self.run_port is not None:
+            config.bot.port = self.run_port
+
+        if self.bot_token is not None:
+            config.bot.token = self.bot_token
+        else:
+            raise ValueError("BOT_TOKEN is not set")
+
+        if self.bot_mode is not None:
+            config.bot.mode = self.bot_mode
+
+        if self.webhook_url is not None:
+            config.bot.webhook_url = self.webhook_url
+        elif config.bot.mode == "webhook":
+            raise ValueError("WEBHOOK_URL is not set")
 
         return config
 

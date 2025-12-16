@@ -1,6 +1,6 @@
 __all__ = [
-    "run_bot",
+    "run_polling",
 ]
 
 
-from .run import run_bot
+from .run_polling import run_polling
