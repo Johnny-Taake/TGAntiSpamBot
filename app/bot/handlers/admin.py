@@ -11,7 +11,7 @@ from logger import get_logger
 log = get_logger(__name__)
 router = Router()
 
-MAX_TITLE = 14
+MAX_TITLE = 34
 PAGE_SIZE = 3
 
 

@@ -1,8 +1,8 @@
 """Create tables
 
-Revision ID: cde0b7d69e7e
+Revision ID: de4519ac09d0
 Revises: 
-Create Date: 2025-12-17 01:41:32.302889
+Create Date: 2025-12-17 05:47:36.913360
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'cde0b7d69e7e'
+revision: str = 'de4519ac09d0'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -31,18 +31,6 @@ def upgrade() -> None:
     sqlite_autoincrement=True
     )
     op.create_index(op.f('ix_chats_telegram_chat_id'), 'chats', ['telegram_chat_id'], unique=True)
-    op.create_table('chat_admins',
-    sa.Column('chat_id', sa.Integer(), nullable=False),
-    sa.Column('telegram_user_id', sa.BigInteger(), nullable=False),
-    sa.Column('first_name', sa.String(length=255), nullable=False),
-    sa.Column('username', sa.String(length=255), nullable=True),
-    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
-    sa.ForeignKeyConstraint(['chat_id'], ['chats.id'], name=op.f('fk_chat_admins_chat_id_chats'), ondelete='CASCADE'),
-    sa.PrimaryKeyConstraint('id', name=op.f('pk_chat_admins')),
-    sa.UniqueConstraint('chat_id', 'telegram_user_id', name='uq_chat_admin_chat_user')
-    )
-    op.create_index(op.f('ix_chat_admins_chat_id'), 'chat_admins', ['chat_id'], unique=False)
-    op.create_index(op.f('ix_chat_admins_telegram_user_id'), 'chat_admins', ['telegram_user_id'], unique=False)
     op.create_table('user_states',
     sa.Column('chat_id', sa.Integer(), nullable=False),
     sa.Column('telegram_user_id', sa.BigInteger(), nullable=False),
@@ -64,9 +52,6 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_user_states_telegram_user_id'), table_name='user_states')
     op.drop_index(op.f('ix_user_states_chat_id'), table_name='user_states')
     op.drop_table('user_states')
-    op.drop_index(op.f('ix_chat_admins_telegram_user_id'), table_name='chat_admins')
-    op.drop_index(op.f('ix_chat_admins_chat_id'), table_name='chat_admins')
-    op.drop_table('chat_admins')
     op.drop_index(op.f('ix_chats_telegram_chat_id'), table_name='chats')
     op.drop_table('chats')
     # ### end Alembic commands ###

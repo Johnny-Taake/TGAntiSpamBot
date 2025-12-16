@@ -17,5 +17,3 @@ class BotConfig(BaseModel):
 
     min_seconds_in_chat: int = 3600
     min_valid_messages: int = 5
-
-    register_code_ttl_seconds: int = 3600

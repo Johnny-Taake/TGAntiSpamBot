@@ -3,6 +3,9 @@ from typing import Optional
 
 from config import config
 from app.db import DataBaseHelper
+from logger import get_logger
+
+log = get_logger(__name__)
 
 
 @dataclass
@@ -26,6 +29,9 @@ def init_container() -> AppContainer:
         echo=config.database.echo,
         timeout=config.database.timeout,
     )
+
+    log.info("Initializing database...")
+    db.run_migrations()
 
     _container = AppContainer(cfg=config, db=db)
     return _container

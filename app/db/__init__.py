@@ -1,7 +1,6 @@
 __all__ = [
     "DataBaseHelper",
     "Chat",
-    "ChatAdmin",
     "UserState",
 ]
 
@@ -9,6 +8,5 @@ __all__ = [
 from .helper import DataBaseHelper
 from .models import (
     Chat,
-    ChatAdmin,
     UserState,
 )

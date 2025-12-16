@@ -32,9 +32,6 @@ class Settings(BaseSettings):
     min_minutes_in_chat: int = 3600
     min_valid_messages: int = 5
 
-    # TODO: add usage by adding admins functionality
-    register_code_ttl_minutes: int = 3600
-
     def get_config(self) -> Config:
         config = Config()
 
@@ -75,9 +72,6 @@ class Settings(BaseSettings):
             config.bot.min_seconds_in_chat = self.min_minutes_in_chat * 60
         if self.min_valid_messages is not None:
             config.bot.min_valid_messages = self.min_valid_messages
-
-        if self.register_code_ttl_minutes is not None:
-            config.bot.register_code_ttl_seconds = self.register_code_ttl_minutes * 60
 
         return config
 

@@ -1,3 +1,7 @@
+from pathlib import Path
+
+from alembic import command
+from alembic.config import Config as AlembicConfig
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncEngine, async_sessionmaker, AsyncSession
 from sqlalchemy import event
 from sqlalchemy.pool import NullPool
@@ -33,6 +37,27 @@ class DataBaseHelper:
             autocommit=False,
             expire_on_commit=False,
         )
+
+    def run_migrations(self) -> None:
+        """Run alembic migrations to update the database to the latest version."""
+        alembic_cfg = AlembicConfig()
+        current_dir = Path(__file__).resolve().parent.parent.parent
+        alembic_cfg.set_main_option("script_location", str(current_dir / "alembic"))
+
+        sync_url = self._convert_async_url_to_sync(self.engine.url)
+        alembic_cfg.set_main_option("sqlalchemy.url", sync_url)
+
+        try:
+            log.info("Running database migrations...")
+            command.upgrade(alembic_cfg, "head")
+            log.info("Database migrations completed successfully.")
+        except Exception as e:
+            log.error(f"Error running database migrations: {e}")
+            raise
+
+    def _convert_async_url_to_sync(self, async_url: str) -> str:
+        """Convert an async SQLAlchemy URL to a synchronous one."""
+        return str(async_url).replace("sqlite+aiosqlite:///", "sqlite:///")
 
     # TODO: Use in lifespan
     async def dispose(self) -> None:
