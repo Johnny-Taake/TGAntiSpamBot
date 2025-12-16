@@ -16,14 +16,24 @@ class Settings(BaseSettings):
     log_level: Optional[LogLevel] = None
     write_to_file: Optional[bool] = None
 
+    # Database settings
     db_path: Optional[str] = None
     db_echo: Optional[bool] = None
     db_timeout: Optional[int] = None
 
+    # Bot settings
     run_port: Optional[int] = None
     bot_token: Optional[str] = None
     bot_mode: Optional[Literal["polling", "webhook"]] = "polling"
     webhook_url: Optional[str] = None
+
+    # Chat settings
+    main_admin_id: Optional[int] = None
+    min_minutes_in_chat: int = 3600
+    min_valid_messages: int = 5
+
+    # TODO: add usage by adding admins functionality
+    register_code_ttl_minutes: int = 3600
 
     def get_config(self) -> Config:
         config = Config()
@@ -55,6 +65,19 @@ class Settings(BaseSettings):
             config.bot.webhook_url = self.webhook_url
         elif config.bot.mode == "webhook":
             raise ValueError("WEBHOOK_URL is not set")
+
+        if self.main_admin_id is not None:
+            config.bot.main_admin_id = self.main_admin_id
+        else:
+            raise ValueError("MAIN_ADMIN_ID is not set")
+
+        if self.min_minutes_in_chat is not None:
+            config.bot.min_seconds_in_chat = self.min_minutes_in_chat * 60
+        if self.min_valid_messages is not None:
+            config.bot.min_valid_messages = self.min_valid_messages
+
+        if self.register_code_ttl_minutes is not None:
+            config.bot.register_code_ttl_seconds = self.register_code_ttl_minutes * 60
 
         return config
 
