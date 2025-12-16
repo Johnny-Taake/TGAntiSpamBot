@@ -30,6 +30,10 @@ async def _run():
     finally:
         log.info("Stopping antispam service...")
         await antispam.stop()
+
+        # Dispose of database resources
+        await db.dispose()
+
         log.info("Antispam service stopped")
 
 

@@ -59,7 +59,6 @@ class DataBaseHelper:
         """Convert an async SQLAlchemy URL to a synchronous one."""
         return str(async_url).replace("sqlite+aiosqlite:///", "sqlite:///")
 
-    # TODO: Use in lifespan
     async def dispose(self) -> None:
         await self.engine.dispose()
 

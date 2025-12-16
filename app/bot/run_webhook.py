@@ -62,6 +62,9 @@ def create_webhook_app() -> FastAPI:
             if _antispam_service:
                 await _antispam_service.stop()
 
+            # Dispose of database resources
+            await db.dispose()
+
             try:
                 await bot.delete_webhook()
             finally:
