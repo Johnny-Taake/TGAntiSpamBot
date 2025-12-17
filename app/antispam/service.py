@@ -1,23 +1,24 @@
-from datetime import datetime, timezone
-
 import asyncio
+from datetime import datetime, timezone
+from typing import Final, cast
+
 from aiogram import Bot
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.exc import IntegrityError
 
 from app.antispam.dto import MessageTask
-from app.services import (
-    get_or_create_user_state,
-    get_chat_by_telegram_id,
-)
 from app.bot.utils import try_delete_message
+from app.services import get_chat_by_telegram_id, get_or_create_user_state
 from config import config
 from logger import get_logger
 
 log = get_logger(__name__)
 
+_SENTINEL: Final = object()
+
 
 def detect_mentions_or_links(task: MessageTask) -> bool:
-    text = task.text or ""
+    text = (task.text or "").strip()
     if not text:
         return False
 
@@ -35,46 +36,66 @@ def detect_mentions_or_links(task: MessageTask) -> bool:
 class AntiSpamService:
     def __init__(self, bot: Bot, queue_size: int = 10_000, workers: int = 4):
         self.bot = bot
-        self.queue: asyncio.Queue[MessageTask] = asyncio.Queue(maxsize=queue_size)
+        self.queue: asyncio.Queue[MessageTask | object] = asyncio.Queue(
+            maxsize=queue_size
+        )
         self.workers = workers
-        self._tasks: list[asyncio.Task] = []
-        self._stop = asyncio.Event()
+        self._tasks: list[asyncio.Task[None]] = []
+        self._started = False
 
-    async def start(self, session_factory):
-        self._stop.clear()
-        for i in range(self.workers):
-            self._tasks.append(
-                asyncio.create_task(self._worker_loop(i, session_factory))
+    async def start(self, session_factory) -> None:
+        if self._started:
+            return
+        self._started = True
+
+        self._tasks = [
+            asyncio.create_task(
+                self._worker_loop(i, session_factory), name=f"antispam-worker-{i}"
             )
+            for i in range(self.workers)
+        ]
+        log.info(
+            "AntiSpamService started: workers=%s queue_size=%s",
+            self.workers,
+            self.queue.maxsize,
+        )
 
-    async def stop(self):
-        self._stop.set()
+    async def stop(self) -> None:
+        if not self._started:
+            return
+
+        # Graceful stop: push one sentinel per worker
         for _ in self._tasks:
-            await self.queue.put(None)
-        for t in self._tasks:
-            t.cancel()
+            await self.queue.put(_SENTINEL)
+
+        # Wait workers to exit
+        await asyncio.gather(*self._tasks, return_exceptions=True)
+
         self._tasks.clear()
+        self._started = False
+        log.info("AntiSpamService stopped")
 
-
-    async def enqueue(self, task: MessageTask):
-        if self.queue.full():
+    async def enqueue(self, task: MessageTask) -> None:
+        try:
+            self.queue.put_nowait(task)
+        except asyncio.QueueFull:
             log.warning(
-                "AntiSpam queue is full. Waiting for chat_id=%s msg_id=%s user_id=%s",
+                "AntiSpam queue full -> waiting. chat_id=%s msg_id=%s user_id=%s",
                 task.telegram_chat_id,
                 task.telegram_message_id,
                 task.telegram_user_id,
             )
-        await self.queue.put(task)
+            await self.queue.put(task)
 
-
-    async def _worker_loop(self, idx: int, session_factory):
-        while not self._stop.is_set():
-            task = await self.queue.get()
-            if task is None:
-                self.queue.task_done()
-                break
-
+    async def _worker_loop(self, idx: int, session_factory) -> None:
+        while True:
+            item = await self.queue.get()
             try:
+                if item is _SENTINEL:
+                    return
+
+                task = cast(MessageTask, item)
+
                 async with session_factory() as session:
                     try:
                         await self._process_one(session, task)
@@ -93,22 +114,15 @@ class AntiSpamService:
             finally:
                 self.queue.task_done()
 
-    async def _process_one(self, session: AsyncSession, task: MessageTask):
-        log.debug(
-            "process_one: chat_id=%s msg_id=%s user_id=%s",
-            task.telegram_chat_id,
-            task.telegram_message_id,
-            task.telegram_user_id,
-        )
+    async def _process_one(self, session: AsyncSession, task: MessageTask) -> None:
+        incoming_title = (task.chat_title or "").strip() or None
+        needs_commit = False
 
         chat = await get_chat_by_telegram_id(session, task.telegram_chat_id)
-        incoming_title = (task.chat_title or "").strip() or None
 
-        log.debug("Chat lookup in antispam service for %s - exists: %s", task.telegram_chat_id, chat is not None)
-
-        if not chat:
+        if chat is None:
             from app.db.models.chat import Chat
-            from sqlalchemy.exc import IntegrityError
+
             try:
                 chat = Chat(
                     telegram_chat_id=task.telegram_chat_id,
@@ -116,35 +130,31 @@ class AntiSpamService:
                     is_active=False,
                 )
                 session.add(chat)
-                await session.commit()
-                await session.refresh(chat)
-                log.info("Antispam service created chat in DB: %s (%r)", task.telegram_chat_id, incoming_title)
+                await session.flush()
+                needs_commit = True
+                log.info(
+                    "Created chat: telegram_chat_id=%s title=%r",
+                    task.telegram_chat_id,
+                    incoming_title,
+                )
             except IntegrityError:
-                # Handle race condition where another worker created the same chat
+                # race: another worker inserted the same chat
                 await session.rollback()
                 chat = await get_chat_by_telegram_id(session, task.telegram_chat_id)
-                if not chat:
-                    log.error(f"Could not create or retrieve chat {task.telegram_chat_id}")
+                if chat is None:
+                    log.error(
+                        "Chat create race lost, but chat still missing: %s",
+                        task.telegram_chat_id,
+                    )
                     return
-        else:
-            if incoming_title and incoming_title != (chat.title or None):
-                old_title = chat.title
-                chat.title = incoming_title
-                await session.commit()
-                log.info("Antispam service updated chat title: %s - %r -> %r", task.telegram_chat_id, old_title, incoming_title)
-            elif not chat.title and incoming_title:
-                chat.title = incoming_title
-                await session.commit()
-                log.info("Antispam service set initial chat title: %s - %r", task.telegram_chat_id, incoming_title)
 
-        if not chat:
-            log.warning(f"No chat found for ID {task.telegram_chat_id}, skipping message")
-            return
+        if incoming_title and incoming_title != (chat.title or None):
+            chat.title = incoming_title
+            needs_commit = True
 
         if not chat.is_active:
-            log.debug(
-                "process_one: chat inactive telegram_chat_id=%s", task.telegram_chat_id
-            )
+            if needs_commit:
+                await session.commit()
             return
 
         user_state = await get_or_create_user_state(
@@ -153,53 +163,29 @@ class AntiSpamService:
             telegram_user_id=task.telegram_user_id,
         )
 
-        log.debug("User state lookup result for chat %s, user %s - exists: %s",
-                 chat.id, task.telegram_user_id, user_state.id if user_state else None)
-
         now = datetime.now(timezone.utc)
 
         joined_at = user_state.joined_at
         if joined_at.tzinfo is None:
             joined_at = joined_at.replace(tzinfo=timezone.utc)
 
-        time_ok = (
-            now - joined_at
-        ).total_seconds() >= config.bot.min_seconds_in_chat
+        time_ok = (now - joined_at).total_seconds() >= config.bot.min_seconds_in_chat
         msgs_ok = user_state.valid_messages >= config.bot.min_valid_messages
         trusted = time_ok and msgs_ok
 
-        log.debug(
-            "trust_check: chat_id=%s user_id=%s time_ok=%s msgs_ok=%s trusted=%s joined_at=%s valid_messages=%s",
-            chat.id,
-            task.telegram_user_id,
-            time_ok,
-            msgs_ok,
-            trusted,
-            user_state.joined_at,
-            user_state.valid_messages,
-        )
-
         if trusted:
-            log.debug("Message trusted, skipping moderation: chat_id=%s msg_id=%s",
-                     task.telegram_chat_id, task.telegram_message_id)
+            if needs_commit:
+                await session.commit()
             return
 
-        has_bad_content = detect_mentions_or_links(task)
-        log.debug("content_check: chat_id=%s msg_id=%s has_bad_content=%s",
-                 task.telegram_chat_id, task.telegram_message_id, has_bad_content)
-
-        if has_bad_content:
-            log.info("Deleting spam message: chat_id=%s msg_id=%s user_id=%s",
-                    task.telegram_chat_id, task.telegram_message_id, task.telegram_user_id)
+        if detect_mentions_or_links(task):
             await try_delete_message(self.bot, task)
+            if needs_commit:
+                await session.commit()
             return
 
         user_state.valid_messages += 1
-        await session.commit()
-        log.debug(
-            "valid_messages++ -> %s (chat_id=%s user_id=%s msg_id=%s)",
-            user_state.valid_messages,
-            chat.id,
-            task.telegram_user_id,
-            task.telegram_message_id,
-        )
+        needs_commit = True
+
+        if needs_commit:
+            await session.commit()
