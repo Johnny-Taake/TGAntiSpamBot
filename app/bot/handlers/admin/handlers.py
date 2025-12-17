@@ -1,10 +1,11 @@
 from aiogram import Router, types
 from aiogram.filters import Command
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from app.db import Chat
-from .guards import ensure_main_admin_private_chat
+from app.bot.filters import PrivateChatFilter, MainAdminFilter, PrivateEventFilter
 from .services import (
     fetch_group_chats,
     update_chat_titles,
@@ -15,11 +16,8 @@ from .keyboards import build_chats_keyboard
 router = Router()
 
 
-@router.message(Command("chats"))
+@router.message(Command("chats"), PrivateChatFilter(), MainAdminFilter())
 async def show_managed_chats(message: types.Message, session: AsyncSession):
-    if not await ensure_main_admin_private_chat(message):
-        return
-
     chats = await fetch_group_chats(session)
     if not chats:
         await message.reply("ℹ️ No groups/supergroups are being managed yet.")
@@ -32,13 +30,10 @@ async def show_managed_chats(message: types.Message, session: AsyncSession):
     )
 
 
-@router.callback_query(lambda c: c.data.startswith("toggle_chat_"))
+@router.callback_query(PrivateEventFilter(), MainAdminFilter(), lambda c: c.data.startswith("toggle_chat_"))
 async def toggle_chat_status(
     callback_query: types.CallbackQuery, session: AsyncSession
 ):
-    if not await ensure_main_admin_private_chat(callback_query):
-        return
-
     _, _, chat_id, page = callback_query.data.split("_")
     chat_id = int(chat_id)
     page = int(page)
@@ -63,13 +58,10 @@ async def toggle_chat_status(
         pass
 
 
-@router.callback_query(lambda c: c.data.startswith("gen_link_"))
+@router.callback_query(PrivateEventFilter(), MainAdminFilter(), lambda c: c.data.startswith("gen_link_"))
 async def generate_chat_link(
     callback_query: types.CallbackQuery, session: AsyncSession
 ):
-    if not await ensure_main_admin_private_chat(callback_query):
-        return
-
     _, _, chat_id, page = callback_query.data.split("_")
     chat_id = int(chat_id)
     page = int(page)
@@ -92,11 +84,8 @@ async def generate_chat_link(
         pass
 
 
-@router.callback_query(lambda c: c.data.startswith("page_chats_"))
+@router.callback_query(PrivateEventFilter(), MainAdminFilter(), lambda c: c.data.startswith("page_chats_"))
 async def paginate_chats(callback_query: types.CallbackQuery, session: AsyncSession):
-    if not await ensure_main_admin_private_chat(callback_query):
-        return
-
     page = int(callback_query.data.split("_")[2])
 
     chats = await fetch_group_chats(session)
@@ -109,13 +98,10 @@ async def paginate_chats(callback_query: types.CallbackQuery, session: AsyncSess
     await callback_query.answer()
 
 
-@router.callback_query(lambda c: c.data == "refresh_chats")
+@router.callback_query(PrivateEventFilter(), MainAdminFilter(), lambda c: c.data == "refresh_chats")
 async def refresh_chats_list(
     callback_query: types.CallbackQuery, session: AsyncSession
 ):
-    if not await ensure_main_admin_private_chat(callback_query):
-        return
-
     chats = await fetch_group_chats(session)
 
     if not chats:
@@ -138,6 +124,6 @@ async def refresh_chats_list(
         await callback_query.answer("✅ Up to date!", show_alert=False)
 
 
-@router.callback_query(lambda c: c.data == "noop")
+@router.callback_query(PrivateEventFilter(), MainAdminFilter(), lambda c: c.data == "noop")
 async def noop(callback_query: types.CallbackQuery):
     await callback_query.answer()

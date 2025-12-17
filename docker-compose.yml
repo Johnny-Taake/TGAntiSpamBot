@@ -4,13 +4,15 @@ services:
     container_name: tg_antispam_bot
     restart: unless-stopped
 
-    # NOTE: Uncomment in case of webhook mode
+    # NOTE: Uncomment in case of webhook mode:
     # ports:
     #   - "8000:8000"
 
     env_file:
       - .env
-
     volumes:
-      - ./database:/app/database
       - ./logs:/app/logs
+      - db_data:/app/database
+
+volumes:
+  db_data:

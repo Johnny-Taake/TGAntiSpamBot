@@ -7,6 +7,12 @@ from aiogram import Router
 
 router = Router()
 
+from .start import router as start_router  # noqa: E402
+router.include_router(start_router)
+
+from .about import router as about_router  # noqa: E402
+router.include_router(about_router)
+
 from .dice import router as dice_router  # noqa: E402
 router.include_router(dice_router)
 

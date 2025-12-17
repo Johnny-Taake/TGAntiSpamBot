@@ -1,23 +1,20 @@
 from typing import Any
 
 from aiogram import Router, types
-from aiogram.enums import ChatType
 
 from app.antispam import AntiSpamService, MessageTask
+from app.bot.filters import GroupOrSupergroupChatFilter
 from config import config
 
 router = Router()
 
 
-@router.message()
+@router.message(GroupOrSupergroupChatFilter())
 async def anti_spam_stub(
     message: types.Message,
     antispam: AntiSpamService,
     **kwargs: Any,
 ):
-    if message.chat.type not in (ChatType.GROUP, ChatType.SUPERGROUP):
-        return
-
     if not message.from_user:
         return
 
