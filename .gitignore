@@ -1,16 +1,54 @@
-# Python-generated files
+# Byte-compiled / optimized / DLL files
 __pycache__/
-*.py[oc]
+*.py[cod]
+*$py.class
+*.so
+
+# Distribution / packaging
 build/
 dist/
 wheels/
-*.egg-info
+*.egg-info/
+*.egg
+MANIFEST
 
+# pytest
+.pytest_cache/
+.tox/
+.nox/
+htmlcov/
+.coverage
+.coverage.*
+*.cover
+coverage.xml
+*.log
+
+# Virtual Environments
+.venv/
+venv/
+ENV/
+env/
+.virtualenv/
+
+# IDE / Editor
 .vscode/
+.idea/
+*.iml
 
-# Virtual environments
-.venv
-
+# Environment & Secrets
 .env
+
+# Database files
 database/
+*.db-journal
+
+# Logs
 logs/
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
