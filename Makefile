@@ -6,7 +6,7 @@ run: build up
 
 restart: stop up
 
-rebuild: down build up
+rebuild: down build-no-cache up
 
 build:
 	$(COMPOSE) build
