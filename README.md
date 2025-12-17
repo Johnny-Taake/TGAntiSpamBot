@@ -98,7 +98,7 @@ Everything else has safe defaults.
 
 ```bash
 git clone <repository-url>
-cd tg-antispam-bot
+cd TGAntiSpamBot
 
 cp .env.example .env
 # edit .env
