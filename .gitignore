@@ -52,3 +52,7 @@ logs/
 *.bak
 *.swp
 *.swo
+
+# Tools
+.mypy_cache
+.ruff_cache
