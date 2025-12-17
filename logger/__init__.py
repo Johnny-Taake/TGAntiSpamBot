@@ -24,7 +24,7 @@ def setup_logging():
     root_logger.setLevel(config.LOG_LEVEL)
 
     logging.getLogger("aiosqlite").setLevel(logging.WARNING)
-    logging.getLogger("sqlalchemy.engine").setLevel(logging.INFO)
+    logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
     logging.getLogger("sqlalchemy.pool").setLevel(logging.WARNING)
     logging.getLogger("aiogram.event").setLevel(logging.INFO)
 
