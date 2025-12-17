@@ -4,6 +4,7 @@ from .logging import LoggingConfig
 from .database import DatabaseConfig
 from .bot import BotConfig
 
+
 class Config(BaseModel):
 
     logging: LoggingConfig = LoggingConfig()

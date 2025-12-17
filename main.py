@@ -1,5 +1,3 @@
-import uvicorn
-
 from app.container import init_container
 from config import config
 from logger import setup_logging, get_logger
@@ -20,6 +18,9 @@ def main():
 
         case "webhook":
             log.info("Running in webhook mode")
+
+            import uvicorn
+
             from app.bot.run_webhook import create_webhook_app
 
             app = create_webhook_app()

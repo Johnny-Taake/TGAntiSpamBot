@@ -29,8 +29,13 @@ class Settings(BaseSettings):
 
     # Chat settings
     main_admin_id: Optional[int] = None
-    min_minutes_in_chat: int = 3600
-    min_valid_messages: int = 5
+    min_minutes_in_chat: Optional[int] = None
+    min_valid_messages: Optional[int] = None
+
+    # AntiSpam settings
+    antispam_queue_size: Optional[int] = None
+    antispam_workers: Optional[int] = None
+    fun_commands_enabled: Optional[bool] = None
 
     def get_config(self) -> Config:
         config = Config()
@@ -72,6 +77,14 @@ class Settings(BaseSettings):
             config.bot.min_seconds_in_chat = self.min_minutes_in_chat * 60
         if self.min_valid_messages is not None:
             config.bot.min_valid_messages = self.min_valid_messages
+
+        if self.antispam_queue_size is not None:
+            config.bot.antispam_queue_size = self.antispam_queue_size
+        if self.antispam_workers is not None:
+            config.bot.antispam_workers = self.antispam_workers
+
+        if self.fun_commands_enabled is not None:
+            config.bot.fun_commands_enabled = self.fun_commands_enabled
 
         return config
 

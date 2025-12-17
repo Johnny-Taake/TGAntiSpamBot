@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Optional
 
 
@@ -9,11 +9,6 @@ class MessageTask:
     telegram_user_id: int
 
     text: Optional[str] = None
-    entities: list[dict[str, Any]] = None
+    entities: list[dict[str, Any]] = field(default_factory=list)
 
     chat_title: Optional[str] = None
-
-    def __post_init__(self):
-        # Set default value for entities if not provided
-        if self.entities is None:
-            object.__setattr__(self, 'entities', [])

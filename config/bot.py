@@ -2,8 +2,9 @@ from typing import Optional, Literal, List
 
 from pydantic import BaseModel
 
+
 class BotConfig(BaseModel):
-    allowed_updates: List[str] =["message", "callback_query"]
+    allowed_updates: List[str] = ["message", "callback_query"]
 
     token: Optional[str] = None
     mode: Literal["polling", "webhook"] = "polling"
@@ -17,3 +18,8 @@ class BotConfig(BaseModel):
 
     min_seconds_in_chat: int = 3600
     min_valid_messages: int = 5
+
+    antispam_queue_size: int = 10000
+    antispam_workers: int = 4
+
+    fun_commands_enabled: bool = False
