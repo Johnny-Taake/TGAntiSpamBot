@@ -19,8 +19,3 @@ async def dice(message: types.Message, bot: Bot, **kwargs: Any):
     # import asyncio
     # await asyncio.sleep(4)
     # await bot.send_message(callback_query.from_user.id, f"Result: {_result.dice.value}")
-
-
-@router.message(Command("slot"), PrivateChatFilter())
-async def slot(message: types.Message, bot: Bot, **kwargs: Any):
-    await bot.send_dice(message.chat.id, emoji=DiceEmoji.SLOT_MACHINE)

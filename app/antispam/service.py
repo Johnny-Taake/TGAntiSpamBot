@@ -1,5 +1,4 @@
 import asyncio
-from datetime import datetime, timezone
 from typing import Final, cast
 
 from aiogram import Bot
@@ -11,6 +10,7 @@ from app.bot.utils import try_delete_message
 from app.services import get_chat_by_telegram_id, get_or_create_user_state
 from config import config
 from logger import get_logger
+from utils import ensure_utc_timezone, utc_now
 
 log = get_logger(__name__)
 
@@ -163,11 +163,8 @@ class AntiSpamService:
             telegram_user_id=task.telegram_user_id,
         )
 
-        now = datetime.now(timezone.utc)
-
-        joined_at = user_state.joined_at
-        if joined_at.tzinfo is None:
-            joined_at = joined_at.replace(tzinfo=timezone.utc)
+        now = utc_now()
+        joined_at = ensure_utc_timezone(user_state.joined_at)
 
         time_ok = (now - joined_at).total_seconds() >= config.bot.min_seconds_in_chat
         msgs_ok = user_state.valid_messages >= config.bot.min_valid_messages
