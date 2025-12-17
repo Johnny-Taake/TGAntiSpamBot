@@ -13,9 +13,9 @@ router = Router()
 
 @router.message(Command("dice"), PrivateChatFilter())
 async def dice(message: types.Message, bot: Bot, **kwargs: Any):
-    # await bot.send_message(callback_query.from_user.id, "Your dice roll is...")
-    _result = await bot.send_dice(message.chat.id, emoji=DiceEmoji.DICE)
+    # await bot.send_message(callback_query.from_user.id, "Your dice roll is...")  # noqa: E501
+    _result = await bot.send_dice(message.chat.id, emoji=DiceEmoji.DICE)  # noqa: E501
 
-    # import asyncio
-    # await asyncio.sleep(4)
-    # await bot.send_message(callback_query.from_user.id, f"Result: {_result.dice.value}")
+    # import asyncio  # noqa: E501
+    # await asyncio.sleep(4)  # noqa: E501
+    # await bot.send_message(callback_query.from_user.id, f"Result: {_result.dice.value}")  # noqa: E501

@@ -53,7 +53,6 @@ class TestEnsureUtcTimezone:
         assert result.replace(tzinfo=None) == dt
 
 
-
 class TestUtcNow:
     def test_returns_utc_datetime(self):
         """Test that utc_now returns a timezone-aware UTC datetime."""

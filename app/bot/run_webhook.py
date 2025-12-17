@@ -28,7 +28,16 @@ def create_webhook_app() -> FastAPI:
 
         db = get_db()
 
-        _antispam_service = AntiSpamService(bot)
+        log.info(
+            "Creating AntiSpamService with queue_size=%s workers=%s",
+            config.bot.antispam_queue_size,
+            config.bot.antispam_workers,
+        )
+        _antispam_service = AntiSpamService(
+            bot,
+            queue_size=config.bot.antispam_queue_size,
+            workers=config.bot.antispam_workers,
+        )
         await _antispam_service.start(db.session_factory)
 
         from app.bot.middleware.antispam import AntiSpamMiddleware

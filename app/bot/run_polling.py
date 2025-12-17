@@ -3,6 +3,7 @@ from app.bot.factory import create_bot_and_dispatcher
 from app.container import get_db, init_container
 from app.antispam.service import AntiSpamService
 from app.bot.middleware.antispam import AntiSpamMiddleware
+from config import config
 from logger import get_logger
 
 log = get_logger(__name__)
@@ -13,7 +14,17 @@ async def _run():
 
     db = get_db()
     bot, dp = create_bot_and_dispatcher()
-    antispam = AntiSpamService(bot)
+
+    log.info(
+        "Creating AntiSpamService with queue_size=%s workers=%s",
+        config.bot.antispam_queue_size,
+        config.bot.antispam_workers,
+    )
+    antispam = AntiSpamService(
+        bot,
+        queue_size=config.bot.antispam_queue_size,
+        workers=config.bot.antispam_workers,
+    )
 
     try:
         log.info("Starting antispam service...")

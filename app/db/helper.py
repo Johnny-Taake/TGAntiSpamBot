@@ -2,7 +2,12 @@ from pathlib import Path
 
 from alembic import command
 from alembic.config import Config as AlembicConfig
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncEngine, async_sessionmaker, AsyncSession
+from sqlalchemy.ext.asyncio import (
+    create_async_engine,
+    AsyncEngine,
+    async_sessionmaker,
+    AsyncSession,
+)
 from sqlalchemy import event
 from sqlalchemy.pool import NullPool
 from contextlib import asynccontextmanager
@@ -10,6 +15,7 @@ from contextlib import asynccontextmanager
 from logger import get_logger
 
 log = get_logger(__name__)
+
 
 class DataBaseHelper:
     def __init__(self, url: str, echo: bool = False, timeout: int = 30):

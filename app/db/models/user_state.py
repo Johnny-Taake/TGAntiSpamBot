@@ -1,8 +1,9 @@
 from sqlalchemy import BigInteger, ForeignKey, Integer, DateTime, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from datetime import datetime, timezone
+from datetime import datetime
 
 from app.db.base import Base
+from utils import utc_now  # Import the utility function
 
 
 class UserState(Base):
@@ -14,7 +15,9 @@ class UserState(Base):
     )
 
     joined_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
+        DateTime(timezone=True),
+        default=utc_now,
+        nullable=False,
     )
     valid_messages: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 

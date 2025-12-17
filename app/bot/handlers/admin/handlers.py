@@ -30,7 +30,9 @@ async def show_managed_chats(message: types.Message, session: AsyncSession):
     )
 
 
-@router.callback_query(PrivateEventFilter(), MainAdminFilter(), lambda c: c.data.startswith("toggle_chat_"))
+@router.callback_query(
+    PrivateEventFilter(), MainAdminFilter(), lambda c: c.data.startswith("toggle_chat_")
+)
 async def toggle_chat_status(
     callback_query: types.CallbackQuery, session: AsyncSession
 ):
@@ -47,7 +49,9 @@ async def toggle_chat_status(
     chat.is_active = not chat.is_active
     await session.commit()
 
-    await callback_query.answer("✅ Activated" if chat.is_active else "⭕️ Deactivated", show_alert=False)
+    await callback_query.answer(
+        "✅ Activated" if chat.is_active else "⭕️ Deactivated", show_alert=False
+    )
 
     chats = await fetch_group_chats(session)
     try:
@@ -58,7 +62,9 @@ async def toggle_chat_status(
         pass
 
 
-@router.callback_query(PrivateEventFilter(), MainAdminFilter(), lambda c: c.data.startswith("gen_link_"))
+@router.callback_query(
+    PrivateEventFilter(), MainAdminFilter(), lambda c: c.data.startswith("gen_link_")
+)
 async def generate_chat_link(
     callback_query: types.CallbackQuery, session: AsyncSession
 ):
@@ -84,7 +90,9 @@ async def generate_chat_link(
         pass
 
 
-@router.callback_query(PrivateEventFilter(), MainAdminFilter(), lambda c: c.data.startswith("page_chats_"))
+@router.callback_query(
+    PrivateEventFilter(), MainAdminFilter(), lambda c: c.data.startswith("page_chats_")
+)
 async def paginate_chats(callback_query: types.CallbackQuery, session: AsyncSession):
     page = int(callback_query.data.split("_")[2])
 
@@ -98,7 +106,9 @@ async def paginate_chats(callback_query: types.CallbackQuery, session: AsyncSess
     await callback_query.answer()
 
 
-@router.callback_query(PrivateEventFilter(), MainAdminFilter(), lambda c: c.data == "refresh_chats")
+@router.callback_query(
+    PrivateEventFilter(), MainAdminFilter(), lambda c: c.data == "refresh_chats"
+)
 async def refresh_chats_list(
     callback_query: types.CallbackQuery, session: AsyncSession
 ):
@@ -124,6 +134,8 @@ async def refresh_chats_list(
         await callback_query.answer("✅ Up to date!", show_alert=False)
 
 
-@router.callback_query(PrivateEventFilter(), MainAdminFilter(), lambda c: c.data == "noop")
+@router.callback_query(
+    PrivateEventFilter(), MainAdminFilter(), lambda c: c.data == "noop"
+)
 async def noop(callback_query: types.CallbackQuery):
     await callback_query.answer()

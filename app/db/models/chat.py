@@ -13,7 +13,9 @@ class Chat(Base):
 
     chat_link: Mapped[str | None] = mapped_column(String(512), nullable=True)
 
-    user_states = relationship("UserState", back_populates="chat", cascade="all, delete-orphan")
+    user_states = relationship(
+        "UserState", back_populates="chat", cascade="all, delete-orphan"
+    )
 
     def __repr__(self) -> str:
         return f"<Chat id={self.id} tg={self.telegram_chat_id} active={self.is_active}>"
