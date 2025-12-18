@@ -29,7 +29,7 @@ docker compose version
 
 ```bash
 git clone <repository-url>
-cd tg-antispam-bot
+cd TGAntiSpamBot
 ```
 
 2. Create environment file:

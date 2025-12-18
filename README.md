@@ -115,6 +115,7 @@ The database and logs (depending on the env) are persisted automatically.
 ### Production / Development Setup
 
 📄 **make usage:** [`docs/MAKE.md`](docs/MAKE.md)
+📄 **docker usage:** [`docs/DOCKER.md`](docs/DOCKER.md)
 📄 **uv usage:** [`docs/UV.md`](docs/UV.md)
 
 ---
@@ -126,6 +127,7 @@ The database and logs (depending on the env) are persisted automatically.
 * `/start` - Welcome message
 * `/about` - Bot description
 * `/chats` - Admin panel (admin only)
+
 Only if fun is enabled via .env:
 * `/dice` - Roll a dice 🎲
 * `/slot` - Slot machine 🎰
