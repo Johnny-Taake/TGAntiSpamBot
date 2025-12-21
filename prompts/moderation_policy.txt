@@ -88,6 +88,36 @@ Examples (RU + EN):
 ANY trade/delivery/“закладка/клад” for non-weed → RETURN 1.0 immediately.
 
 ====================================================
+STEP 0.5 — GENERIC BUY / SELL SOLICITATION (NON-JOB)
+====================================================
+
+If a message explicitly expresses intent to BUY or SELL
+ANY item, service, or asset
+AND contains ANY call to action or contact reference,
+it MUST be treated as OFFER / SOLICITATION,
+even if the item itself is legal or humorous.
+
+BUY / SELL keywords (RU + EN):
+• "куплю", "продам", "возьму", "отдам", "ищу"
+• "buy", "sell", "for sale", "looking to buy"
+
+CALL TO ACTION signals:
+• "пиши", "писать", "напишите", "+"
+• "dm", "pm", "в лс", "в личку"
+
+CONTACT signals:
+• "@username"
+• phone number
+• Telegram / WhatsApp / Instagram / VK handle
+
+RULE:
+If (BUY/SELL) + (CTA OR CONTACT) → RETURN 0.7
+
+NOTE:
+- The nature of the item (real, fictional, joke) is IRRELEVANT.
+- Intent + funnel is what matters.
+
+====================================================
 STEP 1 - MESSAGE TYPE
 ====================================================
 
