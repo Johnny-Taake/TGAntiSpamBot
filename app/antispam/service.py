@@ -1,49 +1,92 @@
+"""
+Anti-Spam Service
+"""
+
 import asyncio
-from typing import Final, cast
+from typing import cast
 
 from aiogram import Bot
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.asyncio import async_sessionmaker
 
+from ai_client.service import AIService
 from app.antispam.dto import MessageTask
-from app.bot.utils import try_delete_message
-from app.services import get_chat_by_telegram_id, get_or_create_user_state
-from config import config
+from app.antispam.processors.message_processor import MessageProcessor
+from app.antispam.utils import TTLSet, get_sentinel
 from logger import get_logger
-from utils import ensure_utc_timezone, utc_now
+
 
 log = get_logger(__name__)
 
-_SENTINEL: Final = object()
-
-
-def detect_mentions_or_links(task: MessageTask) -> bool:
-    text = (task.text or "").strip()
-    if not text:
-        return False
-
-    if "http://" in text or "https://" in text or "t.me/" in text or "www." in text:
-        return True
-
-    for e in task.entities or []:
-        etype = e.get("type") if isinstance(e, dict) else getattr(e, "type", None)
-        if etype in ("mention", "url", "text_link"):
-            return True
-
-    return False
+_SENTINEL = get_sentinel()
 
 
 class AntiSpamService:
-    def __init__(self, bot: Bot, queue_size: int = 10_000, workers: int = 4):
-        self.bot = bot
+    """
+    AI-based anti-spam service with queue-based processing.
+
+    - No local rules (no mention/link checks).
+    - Every non-admin message in active chats is sent to AI.
+    - If score >= threshold -> delete message.
+    - Else -> count as valid message.
+    """
+
+    def __init__(
+        self,
+        bot: Bot,
+        ai_service: AIService,
+        queue_size: int = 10_000,
+        workers: int = 4,
+        dedupe_ttl_s: int = 300,
+        enable_ai_check: bool = True,
+        cleanup_mentions: bool = True,
+        cleanup_links: bool = True,
+    ):
+        # Only require AI service if AI check is enabled and AI is configured to be enabled
+        if ai_service is None and enable_ai_check:
+            from config import config
+
+            if config.bot.ai_enabled:
+                raise ValueError(
+                    "ai_service is required when AI check is enabled in config"
+                )
+            else:
+                # NOTE: If AI is disabled in config, it's okay for service to be None
+                #   because the runtime check will prevent AI usage
+                pass
+
         self.queue: asyncio.Queue[MessageTask | object] = asyncio.Queue(
             maxsize=queue_size
         )
         self.workers = workers
+
         self._tasks: list[asyncio.Task[None]] = []
         self._started = False
 
-    async def start(self, session_factory) -> None:
+        # Configuration flags
+        self.enable_ai_check = enable_ai_check
+        self.cleanup_mentions = cleanup_mentions
+        self.cleanup_links = cleanup_links
+
+        # Store reference to config to check runtime AI enable/disable
+        from config import config
+
+        self.runtime_ai_enabled = config.bot.ai_enabled
+
+        # Early dedupe for (chat_id, msg_id)
+        self._seen = TTLSet(ttl_s=dedupe_ttl_s, max_size=2000)
+
+        # Message processor for handling individual messages
+        self._message_processor = MessageProcessor(
+            bot,
+            ai_service,
+            enable_ai_check=enable_ai_check,
+            cleanup_mentions=cleanup_mentions,
+            cleanup_links=cleanup_links,
+        )
+        # Store reference for runtime AI enable/disable
+        self._message_processor.runtime_ai_enabled = self.runtime_ai_enabled
+
+    async def start(self, session_factory: async_sessionmaker):
         if self._started:
             return
         self._started = True
@@ -54,13 +97,14 @@ class AntiSpamService:
             )
             for i in range(self.workers)
         ]
+
         log.info(
-            "AntiSpamService started: workers=%s queue_size=%s",
-            self.workers,
+            "AntiSpamService started (AI-only): queue_size=%s, workers=%s",
             self.queue.maxsize,
+            self.workers,
         )
 
-    async def stop(self) -> None:
+    async def stop(self):
         if not self._started:
             return
 
@@ -68,7 +112,6 @@ class AntiSpamService:
         for _ in self._tasks:
             await self.queue.put(_SENTINEL)
 
-        # Wait workers to exit
         await asyncio.gather(*self._tasks, return_exceptions=True)
 
         self._tasks.clear()
@@ -87,7 +130,7 @@ class AntiSpamService:
             )
             await self.queue.put(task)
 
-    async def _worker_loop(self, idx: int, session_factory) -> None:
+    async def _worker_loop(self, idx: int, session_factory: async_sessionmaker):
         while True:
             item = await self.queue.get()
             try:
@@ -96,9 +139,19 @@ class AntiSpamService:
 
                 task = cast(MessageTask, item)
 
+                key = (task.telegram_chat_id, task.telegram_message_id)
+                if not self._seen.add_if_new(key):
+                    log.debug(
+                        "Duplicate task skipped: chat_id=%s msg_id=%s worker=%s",
+                        task.telegram_chat_id,
+                        task.telegram_message_id,
+                        idx,
+                    )
+                    continue
+
                 async with session_factory() as session:
                     try:
-                        await self._process_one(session, task)
+                        await self._message_processor.process_message(session, task)
                     except Exception:
                         log.exception(
                             "AntiSpam worker=%s failed: chat_id=%s msg_id=%s user_id=%s",
@@ -113,76 +166,3 @@ class AntiSpamService:
                             log.exception("Rollback failed in worker=%s", idx)
             finally:
                 self.queue.task_done()
-
-    async def _process_one(self, session: AsyncSession, task: MessageTask) -> None:
-        incoming_title = (task.chat_title or "").strip() or None
-        needs_commit = False
-
-        chat = await get_chat_by_telegram_id(session, task.telegram_chat_id)
-
-        if chat is None:
-            from app.db.models.chat import Chat
-
-            try:
-                chat = Chat(
-                    telegram_chat_id=task.telegram_chat_id,
-                    title=incoming_title,
-                    is_active=False,
-                )
-                session.add(chat)
-                await session.flush()
-                needs_commit = True
-                log.info(
-                    "Created chat: telegram_chat_id=%s title=%r",
-                    task.telegram_chat_id,
-                    incoming_title,
-                )
-            except IntegrityError:
-                # race: another worker inserted the same chat
-                await session.rollback()
-                chat = await get_chat_by_telegram_id(session, task.telegram_chat_id)
-                if chat is None:
-                    log.error(
-                        "Chat create race lost, but chat still missing: %s",
-                        task.telegram_chat_id,
-                    )
-                    return
-
-        if incoming_title and incoming_title != (chat.title or None):
-            chat.title = incoming_title
-            needs_commit = True
-
-        if not chat.is_active:
-            if needs_commit:
-                await session.commit()
-            return
-
-        user_state = await get_or_create_user_state(
-            session,
-            chat_id=chat.id,
-            telegram_user_id=task.telegram_user_id,
-        )
-
-        now = utc_now()
-        joined_at = ensure_utc_timezone(user_state.joined_at)
-
-        time_ok = (now - joined_at).total_seconds() >= config.bot.min_seconds_in_chat
-        msgs_ok = user_state.valid_messages >= config.bot.min_valid_messages
-        trusted = time_ok and msgs_ok
-
-        if trusted:
-            if needs_commit:
-                await session.commit()
-            return
-
-        if detect_mentions_or_links(task):
-            await try_delete_message(self.bot, task)
-            if needs_commit:
-                await session.commit()
-            return
-
-        user_state.valid_messages += 1
-        needs_commit = True
-
-        if needs_commit:
-            await session.commit()

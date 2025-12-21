@@ -13,6 +13,10 @@ class Chat(Base):
 
     chat_link: Mapped[str | None] = mapped_column(String(512), nullable=True)
 
+    enable_ai_check: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    cleanup_mentions: Mapped[bool] = mapped_column(Boolean, default=True, nullable=True)
+    cleanup_links: Mapped[bool] = mapped_column(Boolean, default=True, nullable=True)
+
     user_states = relationship(
         "UserState", back_populates="chat", cascade="all, delete-orphan"
     )

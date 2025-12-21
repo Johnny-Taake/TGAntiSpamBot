@@ -5,4 +5,4 @@ __all__ = [
 
 
 from .user import get_or_create_user_state
-from .chat import get_chat_by_telegram_id
+from .chat_cached import get_chat_by_telegram_id

@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from .logging import LoggingConfig
 from .database import DatabaseConfig
 from .bot import BotConfig
+from .ai_client import AIConfig
 
 
 class Config(BaseModel):
@@ -10,6 +11,7 @@ class Config(BaseModel):
     logging: LoggingConfig = LoggingConfig()
     database: DatabaseConfig = DatabaseConfig()
     bot: BotConfig = BotConfig()
+    ai: AIConfig = AIConfig()
 
     @property
     def LOG_LEVEL(self):

@@ -49,7 +49,9 @@ class ChatRegistry:
             log.debug("Chat cache hit: telegram_chat_id=%s", telegram_chat_id)
             return
 
-        log.debug("Chat cache miss: telegram_chat_id=%s, checking DB", telegram_chat_id)  # noqa: E501
+        log.debug(
+            "Chat cache miss: telegram_chat_id=%s, checking DB", telegram_chat_id
+        )  # noqa: E501
         chat = await get_chat_by_telegram_id(session, telegram_chat_id)
         if chat is None:
             try:
@@ -68,7 +70,8 @@ class ChatRegistry:
                 await session.flush()
                 await session.commit()
                 log.info(
-                    "Successfully created chat: telegram_chat_id=%s", telegram_chat_id  # noqa: E501
+                    "Successfully created chat: telegram_chat_id=%s",
+                    telegram_chat_id,  # noqa: E501
                 )
             except IntegrityError:
                 log.warning(

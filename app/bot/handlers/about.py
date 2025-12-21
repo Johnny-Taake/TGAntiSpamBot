@@ -17,12 +17,14 @@ async def about_command(message: types.Message):
         "• Support for both polling and webhook modes"
     )
 
+    author_text = "\n\n<b>Author:</b> @Johnny_Taake"
+
     # Add fun commands if enabled
     if config.bot.fun_commands_enabled:
         features_text += "\n• Fun commands like /dice and /slot"
 
     about_text = (
-        "🛡️ <b>About TG AntiSpam Bot</b>\n\n"
+        "🛡️ <b><a href='https://github.com/Johnny-Taake/TGAntiSpamBot'>TG AntiSpam Bot</a></b>\n\n"
         "This bot helps protect your Telegram groups from spam messages sent by bot users.\n\n"
         "<b>How it works:</b>\n"
         "• Monitors new messages in groups\n"
@@ -32,7 +34,10 @@ async def about_command(message: types.Message):
         "<b>Trust System:</b>\n"
         "Users gain trust by staying in the group and sending valid messages.\n"
         "New users with links or mentions may have their messages deleted.\n\n"
-        "<b>Features:</b>\n"
-        + features_text
+        "<b>Features:</b>\n" + features_text + author_text
     )
-    await message.answer(about_text, parse_mode="HTML")
+    await message.answer(
+        about_text,
+        parse_mode="HTML",
+        link_preview_options=types.LinkPreviewOptions(is_disabled=True),
+    )
