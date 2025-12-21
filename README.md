@@ -10,10 +10,7 @@ The bot automatically removes suspicious messages from new users while allowing 
 
 > *Short demos are worth more than long explanations*
 
-**Spam message deletion:**
-![Spam detection demo](docs/gifs/antispam.gif)
-
-**Admin (group management):**
+**Spam message deletion and Admin (group management):**
 ![Admin demo](docs/gifs/admin.gif)
 
 Notification of AI service failures to admin:
