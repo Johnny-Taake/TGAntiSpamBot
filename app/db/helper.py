@@ -58,7 +58,7 @@ class DataBaseHelper:
             command.upgrade(alembic_cfg, "head")
             log.info("Database migrations completed successfully.")
         except Exception as e:
-            log.error(f"Error running database migrations: {e}")
+            log.error("Error running database migrations: %s", e)
             raise
 
     def _convert_async_url_to_sync(self, async_url: str) -> str:

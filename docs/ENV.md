@@ -251,6 +251,164 @@ When `true`:
 
 ---
 
+## AI / LLM (Optional)
+
+The bot can optionally use an LLM backend to perform **contextual spam detection** (in addition to classic heuristics and trust logic).
+
+📄 **Setup guide:** [`docs/LLM.md`](docs/LLM.md)
+
+### `APP_AI_ENABLED`
+
+Global switch for AI-based moderation.
+
+```env
+APP_AI_ENABLED=false
+```
+
+When `false`:
+
+* the bot runs in **rule-based mode only**
+* no LLM requests are made
+* any incomplete AI config is ignored safely
+
+When `true`:
+
+* the bot will try to initialize the AI client
+* if required variables are missing, AI is skipped with a warning
+
+---
+
+## AI Provider & Model
+
+### `APP_AI_BASE_URL`
+
+Base URL of the provider endpoint.
+
+```env
+APP_AI_BASE_URL=https://openrouter.ai/api/v1/chat/completions
+```
+
+Notes:
+
+* The bot expects an **OpenAI-compatible Chat Completions** endpoint.
+* For local providers the URL may differ (e.g. Ollama /api/chat).
+
+---
+
+### `APP_AI_API_KEY`
+
+API key for your provider.
+
+```env
+APP_AI_API_KEY=sk-...
+```
+
+Notes:
+
+* Required for cloud providers (OpenAI, OpenRouter, etc.)
+* For local providers (Ollama / LM Studio), a dummy value is acceptable
+
+---
+
+### `APP_AI_MODEL`
+
+Model identifier as required by your provider.
+
+```env
+APP_AI_MODEL=qwen/qwen-2.5-7b-instruct
+```
+
+---
+
+## AI Moderation Behavior
+
+### `APP_AI_SPAM_THRESHOLD`
+
+Score threshold above which a message is treated as spam.
+
+```env
+APP_AI_SPAM_THRESHOLD=0.3
+```
+
+Guidelines:
+
+* `0.2` — stricter moderation (more deletions)
+* `0.3` — balanced (default)
+* `0.4+` — more permissive (fewer deletions)
+
+---
+
+### `APP_AI_TEMPERATURE`
+
+Model temperature for scoring.
+
+```env
+APP_AI_TEMPERATURE=0.2
+```
+
+Lower values make output more consistent and stable for moderation.
+
+---
+
+## AI HTTP Client (Networking)
+
+### `APP_HTTP_CONCURRENCY`
+
+Maximum number of concurrent requests to the LLM backend.
+
+```env
+APP_HTTP_CONCURRENCY=5
+```
+
+Guidelines:
+
+* Local inference: `1`
+* Cloud APIs: `5–10`
+
+---
+
+### `APP_HTTP_TIMEOUT_S`
+
+Request timeout in seconds.
+
+```env
+APP_HTTP_TIMEOUT_S=30.0
+```
+
+Increase this if your model is slow or you use heavy “reasoning” models.
+
+---
+
+### `APP_HTTP_MAX_CONNECTIONS`
+
+Total connection pool size.
+
+```env
+APP_HTTP_MAX_CONNECTIONS=40
+```
+
+---
+
+### `APP_HTTP_MAX_KEEP_ALIVE_CONNECTIONS`
+
+Max keep-alive connections.
+
+```env
+APP_HTTP_MAX_KEEP_ALIVE_CONNECTIONS=20
+```
+
+---
+
+### `APP_HTTP_KEEP_ALIVE_EXPIRY_S`
+
+Keep-alive expiry in seconds.
+
+```env
+APP_HTTP_KEEP_ALIVE_EXPIRY_S=30.0
+```
+
+---
+
 ## `.env.example`
 
 A nearly complete and safe template is provided in:

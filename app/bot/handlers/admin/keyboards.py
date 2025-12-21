@@ -24,13 +24,11 @@ def build_chats_keyboard(
         title = compact_title(chat.title)
 
         if chat.chat_link:
-            # Use URL button for existing links
             right_button = InlineKeyboardButton(
                 text="↗️",
                 url=chat.chat_link,
             )
         else:
-            # Use callback button to generate link
             right_button = InlineKeyboardButton(
                 text="🔗",
                 callback_data=f"gen_link_{chat.id}_{page}",
@@ -62,6 +60,39 @@ def build_chats_keyboard(
         rows.append(nav)
 
     rows.append(
-        [InlineKeyboardButton(text="🔄 Refresh", callback_data="refresh_chats")]
+        [
+            InlineKeyboardButton(text="⚙️ Configure", callback_data="configure_chats"),
+            InlineKeyboardButton(text="🔄 Refresh", callback_data="refresh_chats"),
+        ]
     )
+
     return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def build_chat_config_keyboard(chat: Chat, page: int = 0) -> InlineKeyboardMarkup:
+
+    ai_status = "AI ✓" if chat.enable_ai_check else "AI ✗"
+    ai_callback = f"toggle_ai_{chat.id}_{page}"
+
+    mentions_status = "Mentions ✓" if chat.cleanup_mentions else "Mentions ✗"
+    mentions_callback = f"toggle_mentions_{chat.id}_{page}"
+
+    links_status = "Links ✓" if chat.cleanup_links else "Links ✗"
+    links_callback = f"toggle_links_{chat.id}_{page}"
+
+    back_callback = f"back_to_chats_{page}"
+
+    keyboard = [
+        [
+            InlineKeyboardButton(text=ai_status, callback_data=ai_callback),
+        ],
+        [
+            InlineKeyboardButton(text=mentions_status, callback_data=mentions_callback),
+            InlineKeyboardButton(text=links_status, callback_data=links_callback),
+        ],
+        [
+            InlineKeyboardButton(text="◀️ Back", callback_data=back_callback),
+        ],
+    ]
+
+    return InlineKeyboardMarkup(inline_keyboard=keyboard)

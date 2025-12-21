@@ -1,8 +1,8 @@
 __all__ = [
-    "MessageTask",
     "AntiSpamService",
+    "MessageTask",
 ]
 
 
-from .dto import MessageTask
 from .service import AntiSpamService
+from .dto import MessageTask

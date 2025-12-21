@@ -16,7 +16,6 @@ from .about import router as about_router  # noqa: E402
 
 router.include_router(about_router)
 
-# Conditionally include fun router based on configuration
 if config.bot.fun_commands_enabled:
     from .fun import router as fun_router  # noqa: E402
 
@@ -25,6 +24,10 @@ if config.bot.fun_commands_enabled:
 from .admin import router as admin_router  # noqa: E402
 
 router.include_router(admin_router)
+
+from .test import router as test_router  # noqa: E402
+
+router.include_router(test_router)
 
 from .antispam import router as anti_spam_router  # noqa: E402
 

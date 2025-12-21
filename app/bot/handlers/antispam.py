@@ -25,10 +25,10 @@ async def anti_spam_stub(
     if not message.from_user:
         return
 
-    incoming_title = (getattr(message.chat, "title", None) or "").strip() or None  # noqa: E501
+    incoming_title = (getattr(message.chat, "title", None) or "").strip() or None
 
     log.debug(
-        "Processing message from user_id=%s in chat_id=%s (admin=%s)",  # noqa: E501
+        "Processing message from user_id=%s in chat_id=%s (admin=%s)",
         message.from_user.id,
         message.chat.id,
         message.from_user.id == config.bot.main_admin_id,
@@ -42,7 +42,7 @@ async def anti_spam_stub(
     )
 
     if message.from_user.id == config.bot.main_admin_id:
-        log.debug("Skipping antispam for admin user_id=%s", message.from_user.id)  # noqa: E501
+        log.debug("Skipping antispam for admin user_id=%s", message.from_user.id)
         return
 
     text = message.text or message.caption or ""
@@ -58,7 +58,7 @@ async def anti_spam_stub(
     )
 
     log.debug(
-        "Enqueuing antispam task: chat_id=%s msg_id=%s user_id=%s",  # noqa: E501
+        "Enqueuing antispam task: chat_id=%s msg_id=%s user_id=%s",
         message.chat.id,
         message.message_id,
         message.from_user.id,

@@ -23,3 +23,5 @@ class BotConfig(BaseModel):
     antispam_workers: int = 4
 
     fun_commands_enabled: bool = False
+
+    ai_enabled: bool = False

@@ -16,12 +16,14 @@ The bot automatically removes suspicious messages from new users while allowing 
 **Admin (group management):**
 ![Admin demo](docs/gifs/admin.gif)
 
+Notification of AI service failures to admin:
+![AI error notification](docs/images/ai-cilent-error-notification.png)
+
 **Bot rights via BotFather:**
 ![Bot rights demo](docs/gifs/bot_rights.gif)
 
 **Admin rights in a group for bot to delete messages:**
 ![Admin rights for bot demo](docs/gifs/admin_rights.gif)
-
 
 ---
 
@@ -48,6 +50,66 @@ The bot automatically removes suspicious messages from new users while allowing 
 * **Clean Architecture**
 
   * Filters, middleware, services, registry cache
+
+## 🧠 AI-Powered Contextual Spam Detection (Optional)
+
+The bot can optionally use an AI-based contextual analyzer to detect suspicious messages that bypass classic heuristics.
+
+This feature is disabled by default and works as an additional signal on top of the trust-based system - not a replacement.
+
+### What the AI detects
+
+The AI model analyzes message intent and context, not just keywords.
+It helps catch messages like:
+
+* Soft scam or solicitation phrasing
+  * "write me in DM"
+  * "details in PM"
+  * "contact privately"
+* Cross-language bait (RU / EN mixed messages)
+* Indirect advertising without links
+* Rephrased spam that avoids obvious patterns
+
+### How it works
+
+1. Message passes basic filters (chat type, trust level)
+2. If enabled, the message is sent to the AI analyzer
+3. The model returns a risk score (0.0 - 1.0)
+4. The score is combined with:
+   * user trust level
+   * message metadata
+5. Final decision is made by the AntiSpamService
+
+The AI never auto-bans users - it only influences message deletion.
+
+### Design principles
+
+* **Fail-safe** - if AI is unavailable, the bot works normally
+* **Low latency** - async queue, non-blocking
+* **Explainable thresholds** - no black-box moderation
+* **Privacy-aware** - messages are not stored by the AI layer
+
+### Configuration
+
+Enable AI moderation via environment variables:
+
+```env
+APP_AI_ENABLED=true
+APP_AI_PROVIDER=openai | openrouter | local
+APP_AI_MODEL=your_model_name
+APP_AI_BASE_URL=your_provider_url | local_ollama_url
+APP_AI_API_KEY=your_api_key
+```
+
+If configuration is incomplete, the AI service is automatically skipped.
+
+📄 **Detailed configuration:** [docs/AI.md](docs/AI.md)
+📄 **Local ollama api:** [docs/OLLAMA.md](docs/OLLAMA.md)
+
+### Supported modes
+
+* **Local models via Ollama***
+* **OpenAI-compatible APIs**
 
 ---
 
@@ -126,12 +188,17 @@ The database and logs (depending on the env) are persisted automatically.
 
 * `/start` - Welcome message
 * `/about` - Bot description
-* `/chats` - Admin panel (admin only)
+
+For admin only:
+
+* `/chats` - Admin panel
+* `/metrics` - Runtime metrics
+* `/test_ai` - Test AI service
 
 Only if fun is enabled via .env:
+
 * `/dice` - Roll a dice 🎲
 * `/slot` - Slot machine 🎰
-
 
 ---
 
@@ -145,7 +212,6 @@ Allows you to:
 * Activate / deactivate anti-spam per group
 * Navigate chats with pagination
 * Safely manage large numbers of groups
-
 
 ---
 
@@ -168,12 +234,12 @@ Allows you to:
 
   * aiogram 3.x
 
-
 ---
 
 ## 📁 Project Structure
 
 ```text
+ai_client/           # AI integration & analysis
 app/
 ├── antispam/        # Anti-spam logic & workers
 ├── bot/
@@ -189,7 +255,11 @@ docs/
 ├── DOCKER.md
 ├── UV.md
 ├── TEST.md
+├── AI.md
+├── MAKE.md
+├── OLLAMA.md
 └── gifs/            # Demo GIFs
+README.md            # This file
 ```
 
 ---

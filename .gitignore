@@ -56,3 +56,7 @@ logs/
 # Tools
 .mypy_cache
 .ruff_cache
+
+TODO.md
+wip/
+*.bak*
