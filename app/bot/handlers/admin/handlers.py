@@ -42,7 +42,6 @@ async def show_managed_chats(message: types.Message, session: AsyncSession):
     )
 
 
-# TODO: Add to docs
 @router.message(Command("metrics"), PrivateChatFilter(), MainAdminFilter())
 async def show_metrics(message: types.Message, session: AsyncSession):
     log.info("Admin %s requested system metrics", message.from_user.id)
