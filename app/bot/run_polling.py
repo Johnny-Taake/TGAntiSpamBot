@@ -21,19 +21,31 @@ async def _run():
     except KeyboardInterrupt:
         log.info("Received keyboard interrupt, shutting down...")
     except Exception as e:
-        log.error("Error in polling: %s Context: service=polling", e, exc_info=True)
+        log.error(
+            "Error in polling: %s Context: service=polling",
+            e,
+            exc_info=True,
+        )
         raise
     finally:
         log.info("Stopping antispam service...")
         try:
             await antispam.stop()
         except Exception as e:
-            log.error("Error stopping antispam: %s Context: service=antispam_stop", e, exc_info=True)
+            log.error(
+                "Error stopping antispam: %s Context: service=antispam_stop",
+                e,
+                exc_info=True,
+            )
 
         try:
             await db.dispose()
         except Exception as e:
-            log.error("Error disposing database: %s Context: service=database_dispose", e, exc_info=True)
+            log.error(
+                "Error disposing database: %s Context: service=database_dispose",  # noqa: E501
+                e,
+                exc_info=True,
+            )
 
         log.info("Antispam service stopped")
 
@@ -50,7 +62,7 @@ def run_polling():
     signal.signal(signal.SIGINT, signal_handler)
 
     log.info("Starting bot in polling mode...")
-    log.info("Bot token configured: %s", 'Yes' if config.bot.token else 'No')
+    log.info("Bot token configured: %s", "Yes" if config.bot.token else "No")
     log.info("Antispam queue size: %s", config.bot.antispam_queue_size)
     log.info("Antispam workers: %s", config.bot.antispam_workers)
     log.info("AI enabled: %s", config.bot.ai_enabled)

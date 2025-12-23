@@ -14,7 +14,7 @@ The bot automatically removes suspicious messages from new users while allowing 
 ![Admin demo](docs/gifs/admin.gif)
 
 Notification of AI service failures to admin:
-![AI error notification](docs/images/ai-cilent-error-notification.png)
+![AI error notification](docs/images/ai-client-error-notification.png)
 
 **Bot rights via BotFather:**
 ![Bot rights demo](docs/gifs/bot_rights.gif)
@@ -59,7 +59,7 @@ This feature is disabled by default and works as an additional signal on top of 
 The AI model analyzes message intent and context, not just keywords.
 It helps catch messages like:
 
-* Soft scam or solicitation phrasing
+* Funnel / solicitation phrasing
   * "write me in DM"
   * "details in PM"
   * "contact privately"
@@ -71,19 +71,37 @@ It helps catch messages like:
 
 1. Message passes basic filters (chat type, trust level)
 2. If enabled, the message is sent to the AI analyzer
-3. The model returns a risk score (0.0 - 1.0)
-4. The score is combined with:
-   * user trust level
-   * message metadata
-5. Final decision is made by the AntiSpamService
+3. The analyzer runs a **Prompt Pack** (multiple prompts) sequentially
+4. Each prompt returns a risk score (0.0–1.0)
+5. If **any** prompt score reaches the configured threshold - the message is flagged
+6. The decision is applied by the AntiSpamService (AI affects deletion only)
 
 The AI never auto-bans users - it only influences message deletion.
+
+### Prompt Pack (multiple prompts)
+
+The bot supports running **any number of prompts** stored as plain text files in `prompts/`.
+
+**Ordering rule (by filename suffix):**
+Prompts are loaded from `prompts/*.txt`
+Files are executed **in ascending numeric order** based on the trailing `_N` suffix
+Examples (any name instead of `moderation_policy` will work):
+
+0) `moderation_policy.txt` → treated as index `0`
+1) `moderation_policy_1.txt`
+2) `moderation_policy_2.txt`
+3) `moderation_policy_3.txt`
+4) …and so on
+
+This lets you keep prompts small and focused (e.g., illegal activity / funnel solicitation / formatting tricks),
+and modify the size and amount of prompts depending on the LLM used (bigger models require less prompts and more token budget).
 
 ### Design principles
 
 * **Fail-safe** - if AI is unavailable, the bot works normally
 * **Low latency** - async queue, non-blocking
-* **Explainable thresholds** - no black-box moderation
+* **Deterministic prompts** - prompt order is controlled by filenames
+* **Explainable thresholds** - per-message: “hit on prompt #N with score X”
 * **Privacy-aware** - messages are not stored by the AI layer
 
 ### Configuration
@@ -92,20 +110,19 @@ Enable AI moderation via environment variables:
 
 ```env
 APP_AI_ENABLED=true
-APP_AI_PROVIDER=openai | openrouter | local
 APP_AI_MODEL=your_model_name
 APP_AI_BASE_URL=your_provider_url | local_ollama_url
 APP_AI_API_KEY=your_api_key
-```
+````
 
 If configuration is incomplete, the AI service is automatically skipped.
 
 📄 **Detailed configuration:** [docs/AI.md](docs/AI.md)
-📄 **Local ollama api:** [docs/OLLAMA.md](docs/OLLAMA.md)
+📄 **Local Ollama API:** [docs/OLLAMA.md](docs/OLLAMA.md)
 
 ### Supported modes
 
-* **Local models via Ollama***
+* **Local models via Ollama**
 * **OpenAI-compatible APIs**
 
 ---
@@ -236,27 +253,60 @@ Allows you to:
 ## 📁 Project Structure
 
 ```text
-ai_client/           # AI integration & analysis
+ai_client/                # AI client (providers/adapters, requests, utils)
+├── adapters/             # Provider adapters (Ollama, OpenAI)
+├── models/               # Request parts, errors
+└── service.py            # Unified AI service
+alembic/                  # DB migrations
 app/
-├── antispam/        # Anti-spam logic & workers
+├── antispam/             # Anti-spam core
+│   ├── ai/               # AI moderator + notifier
+│   ├── detectors/        # Mentions/links/text normalization
+│   ├── processors/       # Message processing pipeline
+│   ├── scoring/          # AI scoring + parsing
+│   ├── dto.py            # MessageTask and DTOs
+│   └── service.py        # AntiSpamService
 ├── bot/
-│   ├── handlers/    # Commands & message handlers
-│   ├── filters/     # Chat/admin filters
-│   ├── middleware/  # DB, registry, antispam
-│   └── utils/
-├── services/        # Business logic
-├── db/              # Models & helpers
-├── container.py     # App container (DI)
-docs/
-├── ENV.md
-├── DOCKER.md
-├── UV.md
-├── TEST.md
+│   ├── filters/          # Chat/admin filters
+│   ├── handlers/         # Message handlers
+│   │   ├── admin/        # Admin UI: callbacks, keyboards, renderers, services
+│   │   ├── fun/          # Dice/slot etc.
+│   │   └── test/         # Test commands (AI test handler)
+│   ├── middleware/       # DB session, registry, antispam, security
+│   ├── utils/            # Bot helpers (message actions etc.)
+│   ├── bootstrap.py      # Bot bootstrap
+│   ├── factory.py        # Bot factory (DI wiring)
+│   ├── run_polling.py    # Polling entry
+│   └── run_webhook.py    # Webhook entry
+├── db/                   # Database layer
+│   ├── models/           # SQLAlchemy models
+│   ├── base.py           # Base model / metadata
+│   └── helper.py         # DB helpers
+├── services/             # Business services (chat, user, registry, cache)
+├── container.py          # App container (DI)
+├── monitoring.py         # Metrics / monitoring
+└── security.py           # Security helpers
+config/                   # Settings (Pydantic)
+├── settings.py
+├── bot.py
+├── ai_client.py
+├── database.py
+└── logging.py
+docs/                     # Documentation
 ├── AI.md
+├── DOCKER.md
+├── ENV.md
 ├── MAKE.md
 ├── OLLAMA.md
-└── gifs/            # Demo GIFs
-README.md            # This file
+├── TEST.md
+├── UV.md
+├── gifs/                 # Demo GIFs
+└── images/
+scripts/                  # Utility scripts (ollama pull)
+tests/                    # Tests
+utils/                    # Shared utilities
+main.py                   # App entrypoint
+README.md                 # This file
 ```
 
 ---

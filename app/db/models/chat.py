@@ -9,17 +9,17 @@ class Chat(Base):
         BigInteger, unique=True, index=True, nullable=False
     )
     title: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    is_active: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)  # noqa: E501
 
     chat_link: Mapped[str | None] = mapped_column(String(512), nullable=True)
 
     enable_ai_check: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    cleanup_mentions: Mapped[bool] = mapped_column(Boolean, default=True, nullable=True)
-    cleanup_links: Mapped[bool] = mapped_column(Boolean, default=True, nullable=True)
+    cleanup_mentions: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    cleanup_links: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     user_states = relationship(
         "UserState", back_populates="chat", cascade="all, delete-orphan"
     )
 
     def __repr__(self) -> str:
-        return f"<Chat id={self.id} tg={self.telegram_chat_id} active={self.is_active}>"
+        return f"<Chat id={self.id} tg={self.telegram_chat_id} active={self.is_active}>"  # noqa: E501

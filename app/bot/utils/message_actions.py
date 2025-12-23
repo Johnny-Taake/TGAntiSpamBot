@@ -18,14 +18,17 @@ async def try_delete_message(bot: Bot, task: MessageTask) -> None:
 
         if not (is_owner or (is_admin and can_delete)):
             log.warning(
-                "No permission to delete messages in chat_id=%s (status=%s can_delete=%s)",
+                "No permission to delete messages in chat_id=%s (status=%s can_delete=%s)",  # noqa: E501
                 task.telegram_chat_id,
                 getattr(member, "status", None),
                 can_delete,
             )
             return
 
-        await bot.delete_message(task.telegram_chat_id, task.telegram_message_id)
+        await bot.delete_message(
+            task.telegram_chat_id,
+            task.telegram_message_id
+        )
         log.info(
             "Deleted message_id=%s chat_id=%s user_id=%s",
             task.telegram_message_id,
@@ -34,7 +37,10 @@ async def try_delete_message(bot: Bot, task: MessageTask) -> None:
         )
 
     except TelegramForbiddenError:
-        log.warning("Forbidden: cannot delete in chat_id=%s", task.telegram_chat_id)
+        log.warning(
+            "Forbidden: cannot delete in chat_id=%s",
+            task.telegram_chat_id
+        )
     except TelegramBadRequest as e:
         log.warning(
             "BadRequest delete chat_id=%s msg_id=%s: %s",

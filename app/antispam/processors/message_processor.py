@@ -2,17 +2,17 @@ from aiogram import Bot
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.antispam.dto import MessageTask
 from app.bot.utils import try_delete_message
+from app.antispam.dto import MessageTask
+from app.antispam.detectors.mentions import has_mentions
+from app.antispam.detectors.links import has_links
+from app.antispam.ai.moderator import AIModerator
+from app.antispam.ai.notifier import RateLimitedNotifier
 from app.services import get_chat_by_telegram_id, get_or_create_user_state
 from config import config
 from logger import get_logger
 from utils import ensure_utc_timezone, utc_now
 
-from app.antispam.detectors.mentions import has_mentions
-from app.antispam.detectors.links import has_links
-from app.antispam.ai.moderator import AIModerator
-from app.antispam.ai.notifier import RateLimitedNotifier
 
 log = get_logger(__name__)
 
@@ -40,7 +40,9 @@ class MessageProcessor:
         self._ai_moderator = AIModerator(ai_service)
         self._notifier = RateLimitedNotifier()
 
-    async def process_message(self, session: AsyncSession, task: MessageTask) -> bool:
+    async def process_message(
+            self, session: AsyncSession, task: MessageTask
+    ) -> bool:
         """
         Process a single message task for spam detection.
 
@@ -78,13 +80,14 @@ class MessageProcessor:
                 )
             except IntegrityError:
                 await session.rollback()
-                chat = await get_chat_by_telegram_id(session, task.telegram_chat_id)
+                chat = await get_chat_by_telegram_id(session, task.telegram_chat_id)  # noqa: E501
                 if chat is None:
                     log.error(
                         "Chat create race lost, but chat still missing: %s",
                         task.telegram_chat_id,
                     )
-                    return True  # Consider message valid if chat creation fails
+                    # Consider message valid if chat creation fails
+                    return True
 
         if incoming_title and incoming_title != (chat.title or None):
             chat.title = incoming_title
@@ -104,7 +107,7 @@ class MessageProcessor:
         now = utc_now()
         joined_at = ensure_utc_timezone(user_state.joined_at)
 
-        time_ok = (now - joined_at).total_seconds() >= config.bot.min_seconds_in_chat
+        time_ok = (now - joined_at).total_seconds() >= config.bot.min_seconds_in_chat  # noqa: E501
         msgs_ok = user_state.valid_messages >= config.bot.min_valid_messages
         trusted = time_ok and msgs_ok
 
@@ -112,18 +115,23 @@ class MessageProcessor:
             if needs_commit:
                 await session.commit()
             log.debug(
-                "User is trusted (time_ok=%s, msgs_ok=%s): chat_id=%s, user_id=%s, valid_messages=%s",
-                time_ok, msgs_ok, chat.telegram_chat_id, task.telegram_user_id, user_state.valid_messages
+                "User is trusted (time_ok=%s, msgs_ok=%s): chat_id=%s, user_id=%s, valid_messages=%s",  # noqa: E501
+                time_ok,
+                msgs_ok,
+                chat.telegram_chat_id,
+                task.telegram_user_id,
+                user_state.valid_messages,
             )
             return True
 
-        # Use per-chat settings from the database instead of MessageProcessor constructor settings
         chat_enable_ai_check = chat.enable_ai_check
         chat_cleanup_mentions = chat.cleanup_mentions
         chat_cleanup_links = chat.cleanup_links
 
-        # Check for mentions or links if enabled for this chat and delete message if found
-        if (chat_cleanup_mentions and has_mentions(task)) or (chat_cleanup_links and has_links(task)):
+        # Check for mentions or links if enabled for this chat and delete message if found  # noqa: E501
+        if (chat_cleanup_mentions and has_mentions(task)) or (
+            chat_cleanup_links and has_links(task)
+        ):
             await try_delete_message(self.bot, task)
             if needs_commit:
                 await session.commit()
@@ -132,8 +140,8 @@ class MessageProcessor:
         # If global AI is disabled but the chat has AI enabled, log a warning
         if not config.bot.ai_enabled and chat_enable_ai_check:
             log.warning(
-                "Chat %s has AI enabled but global AI is disabled. Using safe default (no AI).",
-                chat.telegram_chat_id
+                "Chat %s has AI enabled but global AI is disabled. Using safe default (no AI).",  # noqa: E501
+                chat.telegram_chat_id,
             )
             chat_enable_ai_check = False
 
@@ -144,10 +152,7 @@ class MessageProcessor:
             return success
         else:
             needs_commit = True
-            log.info(
-                "Chat %s has AI disabled.",
-                chat.telegram_chat_id
-            )
+            log.info("Chat %s has AI disabled.", chat.telegram_chat_id)
             user_state.valid_messages += 1
             await session.commit()
             return True
@@ -165,16 +170,17 @@ class MessageProcessor:
         log.debug("Processing message with AI: %s", task)
 
         try:
-            score = await self._ai_moderator.get_score(task)
+            hit = await self._ai_moderator.first_score_over_threshold(task)
 
-            # Only increment AI requests counter if we actually made an AI call (not for empty text)
-            if score is not None:
-                system_monitor.increment_ai_requests_count()
+            if hit is not None:
+                log.info(
+                    "AI flagged spam: chat_id=%s msg_id=%s prompt=%s score=%.3f",  # noqa: E501
+                    task.telegram_chat_id,
+                    task.telegram_message_id,
+                    hit.prompt_index,
+                    hit.score,
+                )
 
-            is_spam = self._ai_moderator.is_spam(score)
-
-            if is_spam:
-                # Increment spam blocked counter
                 system_monitor.increment_spam_blocked_count()
 
                 await try_delete_message(self.bot, task)
@@ -187,38 +193,42 @@ class MessageProcessor:
             user_state.valid_messages += 1
             needs_commit = True
 
-            # Check if user just became trusted (was not trusted before, but is now)
+            # Check if user just became trusted (was not trusted before, but is now)  # noqa: E501
             now = utc_now()
             joined_at = ensure_utc_timezone(user_state.joined_at)
             was_trusted_before = (
-                (now - joined_at).total_seconds() >= config.bot.min_seconds_in_chat and
-                old_valid_messages >= config.bot.min_valid_messages
+                (now - joined_at).total_seconds() >= config.bot.min_seconds_in_chat  # noqa: E501
+                and old_valid_messages >= config.bot.min_valid_messages
             )
             is_trusted_now = (
-                (now - joined_at).total_seconds() >= config.bot.min_seconds_in_chat and
-                user_state.valid_messages >= config.bot.min_valid_messages
+                (now - joined_at).total_seconds() >= config.bot.min_seconds_in_chat  # noqa: E501
+                and user_state.valid_messages >= config.bot.min_valid_messages
             )
             newly_trusted = not was_trusted_before and is_trusted_now
 
             if newly_trusted:
                 log.info(
-                    "User became trusted: chat_id=%s, user_id=%s, valid_messages=%s",
-                    task.telegram_chat_id, task.telegram_user_id, user_state.valid_messages
+                    "User became trusted: chat_id=%s, user_id=%s, valid_messages=%s",  # noqa: E501
+                    task.telegram_chat_id,
+                    task.telegram_user_id,
+                    user_state.valid_messages,
                 )
 
         except Exception as e:
             log.warning(
-                "AI moderation failed; treating as spam. chat_id=%s msg_id=%s err=%r",
+                "AI moderation failed; treating as valid (fail-safe). chat_id=%s msg_id=%s err=%r",  # noqa: E501
                 task.telegram_chat_id,
                 task.telegram_message_id,
                 e,
             )
-            await try_delete_message(self.bot, task)
             # Send rate-limited notification to admin about AI service failure
             await self._notifier.notify(self.bot, str(e))
+            # AI failure - do NOT delete the message (fail-permissive) and
+            # do NOT increment trust - this prevents AI failures from
+            # accidentally boosting user trust
             if needs_commit:
                 await session.commit()
-            return False  # Message was deleted
+            return True  # Message is treated as valid
 
         if needs_commit:
             await session.commit()

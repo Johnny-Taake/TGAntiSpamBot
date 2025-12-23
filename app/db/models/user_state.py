@@ -25,4 +25,4 @@ class UserState(Base):
 
     __table_args__ = (
         UniqueConstraint("chat_id", "telegram_user_id", name="uq_user_state_chat_user"),
-    )
+    )  # type: ignore

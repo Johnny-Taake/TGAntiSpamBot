@@ -23,45 +23,58 @@ class SecurityValidationMiddleware(BaseMiddleware):
         try:
             # Validate and sanitize data based on event type
             if isinstance(event, Message):
-                await self._validate_message(event)
+                await self._validate_message(event, data)
             elif isinstance(event, CallbackQuery):
-                await self._validate_callback_query(event)
+                await self._validate_callback_query(event, data)
 
             # Continue with the handler
             return await handler(event, data)
 
         except ValueError as e:
             log.warning(
-                "Security validation failed for event %s: %s", type(event).__name__, e
+                "Security validation failed for event %s: %s", type(event).__name__, e  # noqa: E501
             )
             # Send notification to admin about the security issue
             try:
                 bot = data.get("bot")
                 if bot:
                     from config import config
+
                     await bot.send_message(
                         chat_id=config.bot.main_admin_id,
-                        text=f"🚨 Security validation failed for {type(event).__name__}: {e}"
+                        text=f"🚨 Security validation failed for {type(event).__name__}: {e}",  # noqa: E501
                     )
             except Exception as notification_error:
-                log.error("Failed to send security notification to admin: %s", notification_error)
+                log.error(
+                    "Failed to send security notification to admin: %s",
+                    notification_error,
+                )
 
             # Don't process the event if validation fails
             return None
         except Exception as e:
             log.error("Unexpected error in security validation: %s", e)
-            # Continue with handler in case of unexpected errors to avoid blocking
+            # Continue with handler in case of unexpected
+            # errors to avoid blocking
             return await handler(event, data)
 
-    async def _validate_message(self, message: Message) -> None:
+    async def _validate_message(self, message: Message, data: Dict[str, Any]):
         """Validate message data."""
+        # Store sanitized text in middleware data
         if message.text:
-            message.text = sanitize_text(message.text)
+            sanitized_text = sanitize_text(message.text)
+            # Store in data dictionary for later use if needed
+            data["sanitized_text"] = sanitized_text
 
         if message.caption:
-            message.caption = sanitize_text(message.caption)
+            sanitized_caption = sanitize_text(message.caption)
+            data["sanitized_caption"] = sanitized_caption
 
-    async def _validate_callback_query(self, callback_query: CallbackQuery) -> None:
+    async def _validate_callback_query(
+        self, callback_query: CallbackQuery, data: Dict[str, Any]
+    ) -> None:
         """Validate callback query data."""
         if callback_query.data:
-            callback_query.data = sanitize_text(callback_query.data)
+            sanitized_data = sanitize_text(callback_query.data)
+            # Store in data dictionary for later use if needed
+            data["sanitized_callback_data"] = sanitized_data

@@ -332,9 +332,9 @@ APP_AI_SPAM_THRESHOLD=0.3
 
 Guidelines:
 
-* `0.2` — stricter moderation (more deletions)
-* `0.3` — balanced (default)
-* `0.4+` — more permissive (fewer deletions)
+* `0.2` - stricter moderation (more deletions)
+* `0.3` - balanced (default)
+* `0.4+` - more permissive (fewer deletions)
 
 ---
 

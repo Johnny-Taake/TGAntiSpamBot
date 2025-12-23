@@ -5,7 +5,7 @@ import httpx
 
 from config import config
 from logger import get_logger
-
+from app.monitoring import system_monitor
 from .adapters import OpenAIChatCompletionsAdapter, OllamaChatAdapter
 from .models import AIHTTPError, AIResponseFormatError
 from .utils import looks_like_ollama
@@ -28,7 +28,7 @@ class AIService:
                 "concurrency": config.ai.http.concurrency,
                 "timeout_s": config.ai.http.timeout_s,
                 "max_connections": config.ai.http.max_connections,
-                "max_keepalive_connections": config.ai.http.max_keepalive_connections,
+                "max_keepalive_connections": config.ai.http.max_keepalive_connections,  # noqa: E501
                 "keepalive_expiry_s": config.ai.http.keepalive_expiry_s,
             },
         )
@@ -62,7 +62,10 @@ class AIService:
 
         if looks_like_ollama(base_url):
             req = self._ollama.build(
-                base_url=base_url, model=model, user_text=user_text, extra=extra
+                base_url=base_url,
+                model=model,
+                user_text=user_text,
+                extra=extra,
             )
         else:
             req = self._openai.build(
@@ -79,13 +82,17 @@ class AIService:
                     req.url, headers=req.headers, json=req.payload
                 )
             except httpx.TimeoutException as e:
-                raise AIHTTPError(f"Timeout after {config.ai.http.timeout_s}s") from e
+                raise AIHTTPError(
+                    f"Timeout after {config.ai.http.timeout_s}s"
+                ) from e
             except httpx.HTTPError as e:
                 raise AIHTTPError(f"HTTP error: {e!r}") from e
 
         if response.status_code >= 400:
             body = (response.text or "")[:2000]
             raise AIHTTPError(f"HTTP {response.status_code}: {body}")
+
+        system_monitor.increment_ai_requests_count()
 
         try:
             data = response.json()

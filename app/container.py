@@ -15,7 +15,7 @@ class AppContainer:
     cfg: object
     db: DataBaseHelper
     chat_registry: ChatRegistry
-    ai_service: AIService
+    ai_service: Optional[AIService]
 
 
 _container: Optional[AppContainer] = None
@@ -50,13 +50,13 @@ def init_container() -> AppContainer:
     ]
 
     # Check which fields are missing for better observability
-    missing_fields = [field for field, value in required_ai_fields if not value]
+    missing_fields = [field for field, value in required_ai_fields if not value]  # noqa: E501
 
     if all(value for _, value in required_ai_fields):
-        log.info("Initializing AI service with model: %s (AI enabled)", config.ai.model)
+        log.info("Initializing AI service with model: %s (AI enabled)", config.ai.model)  # noqa: E501
         ai_service = AIService()
     elif config.bot.ai_enabled:
-        log.warning("AI service is enabled but configuration is incomplete. Missing: %s", missing_fields)
+        log.warning("AI service is enabled but configuration is incomplete. Missing: %s", missing_fields)  # noqa: E501
         ai_service = None
     else:
         log.info("AI service is disabled - skipping initialization")
@@ -65,7 +65,7 @@ def init_container() -> AppContainer:
         cfg=config, db=db, chat_registry=chat_registry, ai_service=ai_service
     )
     log.info(
-        "Container initialized successfully with database, chat registry, and AI service"
+        "Container initialized successfully with database, chat registry, and AI service"  # noqa: E501
     )
     return _container
 
@@ -76,17 +76,17 @@ def set_antispam_service(antispam_service) -> None:
     if _container is not None:
         _container.antispam_service = antispam_service
     else:
-        raise RuntimeError("Container must be initialized before setting antispam service")
+        raise RuntimeError("Container must be initialized before setting antispam service")  # noqa: E501
 
 
 def get_antispam_service():
     """Get the antispam service from the container."""
     global _container
     if _container is None:
-        raise RuntimeError("Container is not initialized. Call init_container() at startup.")
-    if not hasattr(_container, 'antispam_service'):
-        return None
-    return _container.antispam_service
+        raise RuntimeError("Container is not initialized. Call init_container() at startup.")  # noqa: E501
+    if hasattr(_container, 'antispam_service'):
+        return _container.antispam_service
+    return None
 
 
 def get_container() -> AppContainer:

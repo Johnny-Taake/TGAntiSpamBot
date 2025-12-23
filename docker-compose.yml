@@ -1,3 +1,5 @@
+# TODO: Comment out the networks and ollama service - to keep it but not on default
+
 services:
   app:
     build: .
@@ -20,32 +22,32 @@ services:
     #   - antispam_net
 
 
-  ollama:
-    image: ollama/ollama:latest
-    restart: unless-stopped
+  # ollama:
+  #   image: ollama/ollama:latest
+  #   restart: unless-stopped
 
-    ports:
-      - "11434:11434"
+  #   ports:
+  #     - "11434:11434"
 
-    volumes:
-      - ollama_data:/root/.ollama
+  #   volumes:
+  #     - ollama_data:/root/.ollama
 
-    environment:
-      - OLLAMA_HOST=0.0.0.0:11434
+  #   environment:
+  #     - OLLAMA_HOST=0.0.0.0:11434
 
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
 
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
+  #   deploy:
+  #     resources:
+  #       reservations:
+  #         devices:
+  #           - driver: nvidia
+  #             count: all
+  #             capabilities: [gpu]
 
     # Uncomment to use a shared internal network
     # networks:
@@ -54,7 +56,7 @@ services:
 
 volumes:
   db_data:
-  ollama_data:
+  # ollama_data:
 
 
 # Uncomment if you want all services to communicate - using ollama

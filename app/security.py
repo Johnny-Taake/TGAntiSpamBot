@@ -1,5 +1,5 @@
 """
-Security utilities for input validation and sanitization
+Input validation and basic text sanitization utilities
 """
 
 from typing import Optional
@@ -7,18 +7,18 @@ from typing import Optional
 
 def sanitize_text(text: Optional[str]) -> str:
     """
-    Sanitizes text input to prevent potential security issues.
+    Performs basic text sanitization - removes null bytes and truncates length.
 
     Args:
         text: Text to sanitize
 
     Returns:
-        Sanitized text string
+        Basic sanitized text string
     """
     if not text or not isinstance(text, str):
         return ""
 
-    # Remove null bytes and other dangerous characters
+    # Remove null bytes which can cause database issues
     sanitized = text.replace("\x00", "")
 
     return sanitized[:12000]  # Limit to 12k characters

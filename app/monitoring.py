@@ -4,9 +4,15 @@ Monitoring utilities for system metrics and statistics
 
 import time
 from datetime import datetime
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
+from sqlalchemy import func, select
+
+from config import config as app_config
 from logger import get_logger
+from utils import utc_now
+from app.db.models import UserState
+
 
 log = get_logger(__name__)
 
@@ -24,11 +30,7 @@ class SystemMetrics:
     ai_enabled: bool
     antispam_queue_size: int
     antispam_workers: int
-    timestamp: datetime = None
-
-    def __post_init__(self):
-        if self.timestamp is None:
-            self.timestamp = datetime.utcnow()
+    timestamp: datetime = field(default_factory=utc_now)
 
 
 class SystemMonitor:
@@ -66,23 +68,15 @@ class SystemMonitor:
         self, db_session=None, antispam_service=None
     ) -> SystemMetrics:
         """Get system metrics for admin panel display."""
-        from app.db.models import UserState
-        from sqlalchemy import func
 
         trusted_users = 0
 
         if db_session:
             try:
-                # Count active chats
-                from sqlalchemy import func, select
-
-                # Count trusted users (users with valid messages >= threshold)
-                # Import config to get the actual threshold value from settings
-                from config import config as app_config
 
                 trusted_users_result = await db_session.execute(
                     select(func.count(UserState.id)).where(
-                        UserState.valid_messages >= app_config.bot.min_valid_messages
+                        UserState.valid_messages >= app_config.bot.min_valid_messages  # noqa: E501
                     )
                 )
                 trusted_users = trusted_users_result.scalar()

@@ -35,7 +35,7 @@ def create_webhook_app() -> FastAPI:
 
             if not config.bot.webhook_url:
                 raise RuntimeError(
-                    "config.bot.webhook_url is empty but webhook mode is enabled"
+                    "config.bot.webhook_url is empty but webhook mode is enabled"  # noqa: E501
                 )
 
             # await bot.delete_webhook(drop_pending_updates=True)
@@ -56,7 +56,11 @@ def create_webhook_app() -> FastAPI:
 
             yield
         except Exception as e:
-            log.error("Error in lifespan startup: %s Context: service=lifespan_startup", e, exc_info=True)
+            log.error(
+                "Error in lifespan startup: %s Context: service=lifespan_startup",  # noqa: E501
+                e,
+                exc_info=True,
+            )
             raise
         finally:
             log.info("FastAPI lifespan shutdown: removing webhook...")
@@ -65,23 +69,39 @@ def create_webhook_app() -> FastAPI:
                 if _antispam_service:
                     await _antispam_service.stop()
             except Exception as e:
-                log.error("Error stopping antispam: %s Context: service=antispam_stop", e, exc_info=True)
+                log.error(
+                    "Error stopping antispam: %s Context: service=antispam_stop",  # noqa: E501
+                    e,
+                    exc_info=True,
+                )
 
             # Dispose of database resources
             try:
                 await db.dispose()
             except Exception as e:
-                log.error("Error disposing database: %s Context: service=database_dispose", e, exc_info=True)
+                log.error(
+                    "Error disposing database: %s Context: service=database_dispose",  # noqa: E501
+                    e,
+                    exc_info=True,
+                )
 
             try:
                 await bot.delete_webhook()
             except Exception as e:
-                log.error("Error deleting webhook: %s Context: service=webhook_delete", e, exc_info=True)
+                log.error(
+                    "Error deleting webhook: %s Context: service=webhook_delete",  # noqa: E501
+                    e,
+                    exc_info=True,
+                )
             finally:
                 try:
                     await bot.session.close()
                 except Exception as e:
-                    log.error("Error closing bot session: %s Context: service=bot_session_close", e, exc_info=True)
+                    log.error(
+                        "Error closing bot session: %s Context: service=bot_session_close",  # noqa: E501
+                        e,
+                        exc_info=True,
+                    )
 
             log.info("FastAPI shutdown complete")
 
@@ -101,15 +121,18 @@ def create_webhook_app() -> FastAPI:
         except Exception as e:
             system_monitor.increment_error_count()
             log.error(
-                "Error in webhook handler: %s Context: service=webhook_handler, path=%s, request_method=%s",
+                "Error in webhook handler: %s Context: service=webhook_handler, path=%s, request_method=%s",  # noqa: E501
                 e,
                 config.bot.webhook_path,
                 request.method,
-                exc_info=True
+                exc_info=True,
             )
             try:
                 raw_body = await request.body()
-                log.warning("Webhook request body (on error): %s", raw_body[:1000])
+                log.warning(
+                    "Webhook request body (on error): %s",
+                    raw_body[:1000],
+                )
             except Exception:
                 pass
 

@@ -1,7 +1,7 @@
 """Create tables
 
 Revision ID: de4519ac09d0
-Revises: 
+Revises:
 Create Date: 2025-12-17 05:47:36.913360
 
 """

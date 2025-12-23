@@ -60,3 +60,5 @@ logs/
 TODO.md
 wip/
 *.bak*
+
+.obsidian

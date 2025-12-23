@@ -35,11 +35,12 @@ class RateLimitedNotifier:
         try:
             await bot.send_message(
                 chat_id=config.bot.main_admin_id,
-                text=f"🚨 AI Service Error Alert!\n\nError: {error_msg}\n\nAI moderation is temporarily affected.",
+                text=f"🚨 AI Service Error Alert!\n\nError: {error_msg}\n\nAI moderation is temporarily affected.",  # noqa: E501
             )
             self._last_ai_error_notification = current_time
             log.info("AI error notification sent to admin")
         except Exception as notification_error:
             log.error(
-                "Failed to send AI error notification to admin: %s", notification_error
+                "Failed to send AI error notification to admin: %s",
+                notification_error
             )

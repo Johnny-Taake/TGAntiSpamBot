@@ -3,7 +3,7 @@ from typing import Optional
 
 from ai_client.service import AIService
 from logger import get_logger
-
+from config import config
 
 log = get_logger(__name__)
 
@@ -31,7 +31,7 @@ class AIScorer:
         """
         service = ai_service or self.ai_service
         if service is None:
-            log.warning("( ! ) AI service not configured - AI check will always pass with score 0.0 ( ! )")
+            log.warning("( ! ) AI service not configured - AI check will always pass with score 0.0 ( ! )")  # noqa: E501
             return "0.0"
 
         from config import config
@@ -58,10 +58,10 @@ class AIScorer:
             fs = None
 
         if fs is not None:
-            if fs >= 0.3:
-                log.warning("AI response: %s", s)
+            if fs >= config.ai.spam_threshold:
+                log.warning("AI response: %s (threshold: %s)", s, config.ai.spam_threshold)
             else:
-                log.info("AI response: %s", s)
+                log.info("AI response: %s (threshold: %s)", s, config.ai.spam_threshold)
         else:
             log.warning("AI response (non-float raw): %r", s[:200])
 

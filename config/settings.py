@@ -111,7 +111,9 @@ class Settings(BaseSettings):
         # Conditional requirement for webhook mode
         mode = self.bot_mode or "polling"
         if mode == "webhook" and not self.webhook_url:
-            raise ValueError("APP_WEBHOOK_URL is required when APP_BOT_MODE=webhook")
+            raise ValueError(
+                "APP_WEBHOOK_URL is required when APP_BOT_MODE=webhook"
+            )
 
         return self
 

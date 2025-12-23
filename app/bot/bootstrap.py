@@ -15,7 +15,9 @@ from logger import get_logger
 log = get_logger(__name__)
 
 
-async def bootstrap_bot_for_polling(db) -> Tuple[Bot, Dispatcher, AntiSpamService]:
+async def bootstrap_bot_for_polling(
+        db
+) -> Tuple[Bot, Dispatcher, AntiSpamService]:
     """
     Bootstrap function for polling mode that handles:
     - Bot creation
@@ -53,7 +55,8 @@ async def bootstrap_bot_for_polling(db) -> Tuple[Bot, Dispatcher, AntiSpamServic
 
 async def bootstrap_antispam_service(db, bot: Bot) -> AntiSpamService:
     """
-    Bootstrap function for antispam service only (for webhook mode where bot/dispatcher are created separately).
+    Bootstrap function for antispam service only
+    (for webhook mode where bot/dispatcher are created separately).
 
     Args:
         db: Database instance containing session factory
