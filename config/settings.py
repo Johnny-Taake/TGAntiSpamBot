@@ -41,6 +41,7 @@ class Settings(BaseSettings):
     antispam_queue_size: Optional[int] = 20000
     antispam_workers: Optional[int] = 8
     fun_commands_enabled: Optional[bool] = None
+    antispam_max_emojis: Optional[int] = None
 
     # AI settings
     ai_base_url: Optional[str] = None
@@ -160,6 +161,8 @@ class Settings(BaseSettings):
             config.bot.antispam_workers = self.antispam_workers
         if self.fun_commands_enabled is not None:
             config.bot.fun_commands_enabled = self.fun_commands_enabled
+        if self.antispam_max_emojis is not None:
+            config.bot.max_emojis = self.antispam_max_emojis
 
         # AI
         if self.ai_base_url is not None:

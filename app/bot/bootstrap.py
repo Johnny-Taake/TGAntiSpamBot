@@ -41,6 +41,7 @@ async def bootstrap_bot_for_polling(
         ai_service=container.ai_service,
         queue_size=config.bot.antispam_queue_size,
         workers=config.bot.antispam_workers,
+        cleanup_emojis=True,
     )
 
     await antispam.start(db.session_factory)
@@ -72,6 +73,7 @@ async def bootstrap_antispam_service(db, bot: Bot) -> AntiSpamService:
         ai_service=container.ai_service,
         queue_size=config.bot.antispam_queue_size,
         workers=config.bot.antispam_workers,
+        cleanup_emojis=True,
     )
 
     await antispam.start(db.session_factory)

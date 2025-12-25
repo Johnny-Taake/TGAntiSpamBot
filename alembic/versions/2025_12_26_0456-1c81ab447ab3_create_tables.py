@@ -1,18 +1,18 @@
-"""Create tables
+"""create tables
 
-Revision ID: de4519ac09d0
+Revision ID: 1c81ab447ab3
 Revises:
-Create Date: 2025-12-17 05:47:36.913360
+Create Date: 2025-12-26 04:56:47.026774
 
 """
 from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
-
+from sqlalchemy.dialects import sqlite
 
 # revision identifiers, used by Alembic.
-revision: str = 'de4519ac09d0'
+revision: str = '1c81ab447ab3'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -25,6 +25,11 @@ def upgrade() -> None:
     sa.Column('title', sa.String(length=255), nullable=True),
     sa.Column('is_active', sa.Boolean(), nullable=False),
     sa.Column('chat_link', sa.String(length=512), nullable=True),
+    sa.Column('enable_ai_check', sa.Boolean(), nullable=False),
+    sa.Column('cleanup_mentions', sa.Boolean(), nullable=False),
+    sa.Column('cleanup_emojis', sa.Boolean(), nullable=False),
+    sa.Column('cleanup_links', sa.Boolean(), nullable=False),
+    sa.Column('allowed_link_domains', sqlite.JSON(), nullable=False),
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
     sa.PrimaryKeyConstraint('id', name=op.f('pk_chats')),
     sqlite_autoincrement=True

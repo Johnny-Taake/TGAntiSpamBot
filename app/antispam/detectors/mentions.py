@@ -1,17 +1,8 @@
 import re
-from typing import Any
 
 from app.antispam.dto import MessageTask
 from app.antispam.detectors.text_normalizer import normalize_text
-
-
-def _check_entity_type(entity: Any, target_types: set) -> bool:
-    """Check if an entity is of any of the target types."""
-    if isinstance(entity, dict):
-        return entity.get("type") in target_types
-    elif hasattr(entity, "type"):
-        return getattr(entity, "type") in target_types
-    return False
+from app.antispam.detectors.shared import check_entity_type
 
 
 def has_mentions(task: MessageTask) -> bool:
@@ -31,7 +22,7 @@ def has_mentions(task: MessageTask) -> bool:
     if task.entities:
         mention_types = {"mention"}
         for entity in task.entities:
-            if _check_entity_type(entity, mention_types):
+            if check_entity_type(entity, mention_types):
                 return True
 
     # Text fallback (works even if entities are missing)

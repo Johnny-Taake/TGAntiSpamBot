@@ -41,6 +41,7 @@ class AntiSpamService:
         enable_ai_check: bool = True,
         cleanup_mentions: bool = True,
         cleanup_links: bool = True,
+        cleanup_emojis: bool = True,
     ):
         # Make AI service optional - don't crash due to AI config error
         # Log warning if AI is enabled but service is not available
@@ -68,6 +69,7 @@ class AntiSpamService:
         self.enable_ai_check = enable_ai_check
         self.cleanup_mentions = cleanup_mentions
         self.cleanup_links = cleanup_links
+        self.cleanup_emojis = cleanup_emojis
 
         # Early dedupe for (chat_id, msg_id)
         self._seen = TTLSet(ttl_s=dedupe_ttl_s, max_size=2000)
@@ -78,6 +80,7 @@ class AntiSpamService:
             enable_ai_check=enable_ai_check,
             cleanup_mentions=cleanup_mentions,
             cleanup_links=cleanup_links,
+            cleanup_emojis=cleanup_emojis,
         )
 
     async def start(self, session_factory: async_sessionmaker):

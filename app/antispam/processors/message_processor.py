@@ -6,6 +6,7 @@ from app.bot.utils import try_delete_message
 from app.antispam.dto import MessageTask
 from app.antispam.detectors.mentions import has_mentions
 from app.antispam.detectors.links import has_links
+from app.antispam.detectors.emojis import has_excessive_emojis
 from app.antispam.ai.moderator import AIModerator
 from app.antispam.ai.notifier import RateLimitedNotifier
 from app.services import get_chat_by_telegram_id, get_or_create_user_state
@@ -31,17 +32,21 @@ class MessageProcessor:
         enable_ai_check: bool = True,
         cleanup_mentions: bool = True,
         cleanup_links: bool = True,
+        cleanup_emojis: bool = True,
     ):
         self.bot = bot
         self.ai_service = ai_service
         self.enable_ai_check = enable_ai_check
         self.cleanup_mentions = cleanup_mentions
         self.cleanup_links = cleanup_links
+        self.cleanup_emojis = cleanup_emojis
         self._ai_moderator = AIModerator(ai_service)
         self._notifier = RateLimitedNotifier()
 
     async def process_message(
-            self, session: AsyncSession, task: MessageTask
+        self,
+        session: AsyncSession,
+        task: MessageTask,
     ) -> bool:
         """
         Process a single message task for spam detection.
@@ -69,6 +74,7 @@ class MessageProcessor:
                     enable_ai_check=config.bot.ai_enabled,
                     cleanup_mentions=True,
                     cleanup_links=True,
+                    cleanup_emojis=False,  # Default to disabled initially
                 )
                 session.add(chat)
                 await session.flush()
@@ -127,15 +133,21 @@ class MessageProcessor:
         chat_enable_ai_check = chat.enable_ai_check
         chat_cleanup_mentions = chat.cleanup_mentions
         chat_cleanup_links = chat.cleanup_links
+        chat_cleanup_emojis = chat.cleanup_emojis
 
-        # Check for mentions or links if enabled for this chat and delete message if found  # noqa: E501
-        if (chat_cleanup_mentions and has_mentions(task)) or (
-            chat_cleanup_links and has_links(task)
-        ):
+        # Check all rule-based filters and delete message
+        # if any condition is met
+        should_delete = (
+            (chat_cleanup_mentions and has_mentions(task)) or
+            (chat_cleanup_links and has_links(task, chat)) or
+            (chat_cleanup_emojis and has_excessive_emojis(task, config.bot.max_emojis))  # noqa: E501
+        )
+
+        if should_delete:
             await try_delete_message(self.bot, task)
             if needs_commit:
                 await session.commit()
-            return False  # Message was deleted due to mentions/links
+            return False
 
         # If global AI is disabled but the chat has AI enabled, log a warning
         if not config.bot.ai_enabled and chat_enable_ai_check:

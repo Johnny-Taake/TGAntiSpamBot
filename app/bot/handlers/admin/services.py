@@ -9,7 +9,9 @@ log = get_logger(__name__)
 
 
 async def fetch_group_chats(session: AsyncSession) -> list[Chat]:
-    result = await session.execute(select(Chat).where(Chat.telegram_chat_id < 0))
+    result = await session.execute(
+        select(Chat).where(Chat.telegram_chat_id < 0)
+    )
     return list(result.scalars().all())
 
 
@@ -61,5 +63,9 @@ async def ensure_chat_link(
         return True, "Invite link created ↗️"
 
     except Exception as e:
-        log.warning("ensure_chat_link failed chat=%s err=%s", chat.telegram_chat_id, e)
+        log.warning(
+            "ensure_chat_link failed chat=%s err=%s",
+            chat.telegram_chat_id,
+            e,
+        )
         return False, "Can't create link"

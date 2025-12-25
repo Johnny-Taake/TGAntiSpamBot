@@ -32,10 +32,12 @@ Notification of AI service failures to admin:
   * Trusted users are never interrupted
 * **Automatic Spam Deletion**
 
-  * Links, mentions, and suspicious entities are removed
+  * Links, mentions, and suspicious entities, messages with many emojis are removed
+  * Links white-listing
 * **Admin Panel**
 
   * Enable or disable protection per group
+  * Configure protection parameters per group
   * See all chats the bot is present in
 * **Async Queue Processing**
 
@@ -44,8 +46,6 @@ Notification of AI service failures to admin:
 * **Persistent Storage**
 
   * SQLite + migrations
-* **Clean Architecture**
-
   * Filters, middleware, services, registry cache
 
 ## 🧠 AI-Powered Contextual Spam Detection (Optional)

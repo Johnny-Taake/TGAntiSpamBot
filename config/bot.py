@@ -25,3 +25,5 @@ class BotConfig(BaseModel):
     fun_commands_enabled: bool = False
 
     ai_enabled: bool = False
+
+    max_emojis: int = 5
