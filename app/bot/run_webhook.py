@@ -113,7 +113,6 @@ def create_webhook_app() -> FastAPI:
     @app.post(config.bot.webhook_path)
     async def telegram_webhook(request: Request):
         try:
-            system_monitor.increment_request_count()
             data = await request.json()
             update = Update.model_validate(data)
             await dp.feed_webhook_update(bot, update)

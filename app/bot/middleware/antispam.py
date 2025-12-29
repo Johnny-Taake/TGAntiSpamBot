@@ -3,6 +3,7 @@ from aiogram import BaseMiddleware
 from aiogram.types import TelegramObject
 
 from app.antispam.service import AntiSpamService
+from app.monitoring import system_monitor
 
 
 class AntiSpamMiddleware(BaseMiddleware):
@@ -16,5 +17,11 @@ class AntiSpamMiddleware(BaseMiddleware):
         event: TelegramObject,
         data: Dict[str, Any],
     ) -> Any:
+        # Increment request counter for each processed message/update
+        system_monitor.increment_request_count()
         data["antispam"] = self.antispam_service
-        return await handler(event, data)
+        try:
+            return await handler(event, data)
+        except Exception:
+            system_monitor.increment_error_count()
+            raise
